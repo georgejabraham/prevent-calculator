@@ -1,0 +1,1818 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>PREVENT Risk Calculator</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: clinical worksheet. Capture strip on top, grouped inputs on the left, a sticky readout on the right (stacks on phones with a bottom status bar). */
+:root {
+  --bg: #F2F4F3;
+  --surface: #FFFFFF;
+  --sunken: #E9EDEB;
+  --ink: #17201D;
+  --muted: #5A6864;
+  --line: #D5DDDA;
+  --accent: #C0191F;
+  --accent-ink: #FFFFFF;
+  --accent-soft: #FCE8E8;
+  --warn: #8F5600;
+  --warn-soft: #FAEFD9;
+  --err: #B0261C;
+  --err-soft: #FBE8E5;
+  --ok: #24684A;
+  --ok-soft: #E1F0E7;
+  --info: #2D4F8A;
+  --info-soft: #E5ECF7;
+  --focus: #2F5BD3;
+  --font-display: "IBM Plex Sans Condensed", "Arial Narrow", system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-data: "IBM Plex Mono", ui-monospace, "Cascadia Mono", Consolas, monospace;
+  --radius: 8px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0F1413; --surface: #161D1B; --sunken: #1D2523; --ink: #E5ECE9; --muted: #98A7A2; --line: #2B3633;
+    --accent: #E3342B; --accent-ink: #FFFFFF; --accent-soft: #3D1513;
+    --warn: #E9B256; --warn-soft: #382A12; --err: #F28B80; --err-soft: #3D1A16;
+    --ok: #74C99C; --ok-soft: #15301F; --info: #93B4EC; --info-soft: #1A2740; --focus: #8EAEF5;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0F1413; --surface: #161D1B; --sunken: #1D2523; --ink: #E5ECE9; --muted: #98A7A2; --line: #2B3633;
+  --accent: #E3342B; --accent-ink: #FFFFFF; --accent-soft: #3D1513;
+  --warn: #E9B256; --warn-soft: #382A12; --err: #F28B80; --err-soft: #3D1A16;
+  --ok: #74C99C; --ok-soft: #15301F; --info: #93B4EC; --info-soft: #1A2740; --focus: #8EAEF5;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+.wrap { max-width: 1180px; margin: 0 auto; padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 20px 96px; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+.num, .data { font-family: var(--font-data); font-variant-numeric: tabular-nums; }
+
+/* Masthead */
+.mast { display: flex; flex-wrap: wrap; align-items: end; justify-content: space-between; gap: 8px 24px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); margin-bottom: 18px; }
+.mast h1 { font-size: 30px; font-weight: 700; letter-spacing: -0.01em; line-height: 1.05; }
+.mast h1 span { color: var(--accent); }
+.mast p { margin: 4px 0 0; color: var(--muted); font-size: 14px; max-width: 62ch; }
+.mast .tools { display: flex; gap: 8px; flex-wrap: wrap; }
+
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 7px 12px; cursor: pointer; font-weight: 500; font-size: 14px; line-height: 1.2; }
+.btn:hover { border-color: var(--muted); }
+.btn.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+.btn.primary:hover { filter: brightness(1.08); }
+.btn[disabled] { opacity: .55; cursor: default; filter: none; }
+.btn.small { padding: 4px 9px; font-size: 13px; }
+.btn.big { padding: 11px 22px; font-size: 17px; font-weight: 600; border-radius: 8px; }
+.btn.clear { border: 2px solid var(--accent); color: var(--accent); display: inline-flex; align-items: center; gap: 8px; }
+.btn.clear:hover { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+.mast .tools { align-items: center; }
+.linkish { background: none; border: 0; padding: 0; color: var(--info); text-decoration: underline; text-underline-offset: 2px; cursor: pointer; font-size: 13px; }
+
+.banner { display: flex; gap: 12px; align-items: center; justify-content: space-between; flex-wrap: wrap; background: var(--info-soft); color: var(--ink); border-radius: var(--radius); padding: 9px 14px; margin-bottom: 16px; font-size: 14px; }
+.banner b { color: var(--info); }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 20px; align-items: start; }
+@media (max-width: 900px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+.panel-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.panel-h h2 { font-size: 17px; font-weight: 600; }
+.panel-h .hint { color: var(--muted); font-size: 13px; }
+.panel-b { padding: 14px 16px 16px; }
+
+/* Capture */
+.capture { margin-bottom: 20px; }
+.cap-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px; }
+@media (max-width: 640px) { .cap-grid { grid-template-columns: minmax(0, 1fr); } }
+.drop { border: 1.5px dashed var(--line); border-radius: var(--radius); background: var(--sunken); padding: 14px; display: flex; flex-direction: column; gap: 10px; min-height: 148px; transition: border-color .15s, background .15s; }
+.drop.over { border-color: var(--accent); background: var(--accent-soft); }
+.drop .lead { font-weight: 500; }
+.drop .sub { color: var(--muted); font-size: 13px; }
+.drop .row { display: flex; gap: 8px; flex-wrap: wrap; }
+.filebtn { position: relative; overflow: hidden; }
+.filebtn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.thumb { position: relative; width: 64px; height: 64px; border-radius: 6px; overflow: hidden; border: 1px solid var(--line); background: var(--surface); }
+.thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb button { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; border: 0; background: var(--ink); color: var(--bg); font-size: 12px; line-height: 20px; padding: 0; cursor: pointer; }
+textarea#paste { width: 100%; min-height: 148px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 10px 12px; font-size: 14px; line-height: 1.45; }
+.cap-actions { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+.cap-status { font-size: 13px; color: var(--muted); }
+.cap-status.err { color: var(--err); }
+.cap-note { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+
+.review { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 12px; }
+.review h3 { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.rv-table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+.rv-wrap { overflow-x: auto; }
+.rv-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 8px 6px 0; border-bottom: 1px solid var(--line); }
+.rv-table td { padding: 6px 8px 6px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+.rv-table td.q { color: var(--muted); font-style: italic; max-width: 32ch; }
+.rv-notes { margin: 10px 0 0; padding-left: 18px; font-size: 13px; color: var(--ink); }
+
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 11.5px; font-weight: 500; padding: 1px 7px; border-radius: 999px; white-space: nowrap; letter-spacing: .01em; }
+.chip.high, .chip.ok { background: var(--ok-soft); color: var(--ok); }
+.chip.medium, .chip.warn { background: var(--warn-soft); color: var(--warn); }
+.chip.low, .chip.err { background: var(--err-soft); color: var(--err); }
+.chip.src { background: var(--sunken); color: var(--muted); }
+.chip.src.photo, .chip.src.text { background: var(--info-soft); color: var(--info); }
+.chip.src.example { background: var(--sunken); color: var(--muted); }
+.chip.src.calc { background: var(--sunken); color: var(--muted); }
+
+/* Form */
+.groups { display: grid; gap: 16px; }
+.group { padding: 14px 16px 6px; }
+.group + .group { border-top: 1px solid var(--line); }
+.group-h { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; flex-wrap: wrap; }
+.group-h h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.group-h select { border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 3px 6px; font-size: 13px; }
+.fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 4px 18px; }
+.field { display: flex; flex-direction: column; gap: 4px; padding-bottom: 12px; min-width: 0; }
+.field > label, .field > .lbl { font-weight: 500; font-size: 14px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ctl { display: flex; align-items: stretch; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); overflow: hidden; }
+.ctl input { flex: 1; min-width: 0; border: 0; background: transparent; padding: 8px 10px; font-family: var(--font-data); font-size: 16px; font-variant-numeric: tabular-nums; outline: none; }
+.ctl .unit { padding: 8px 10px; color: var(--muted); font-size: 13px; background: var(--sunken); border-left: 1px solid var(--line); display: flex; align-items: center; white-space: nowrap; }
+.ctl select.unit { border: 0; border-left: 1px solid var(--line); cursor: pointer; }
+.ctl:focus-within { border-color: var(--focus); box-shadow: 0 0 0 1px var(--focus); }
+.meta { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: var(--muted); min-height: 18px; }
+.msg { font-size: 12.5px; }
+.msg:empty { display: none; }
+.field.missing .ctl, .field.missing .seg { border-color: var(--warn); border-style: dashed; }
+.field.bad .ctl { border-color: var(--err); }
+.field.bad .msg { color: var(--err); }
+.field.check .ctl, .field.check .seg { border-color: var(--warn); }
+.field.check .msg, .field.note .msg { color: var(--warn); }
+.field.flash .ctl, .field.flash .seg { animation: flash 1.2s ease-out; }
+@keyframes flash { 0% { box-shadow: 0 0 0 3px var(--accent); } 100% { box-shadow: 0 0 0 0 transparent; } }
+@media (prefers-reduced-motion: reduce) { .field.flash .ctl, .field.flash .seg { animation: none; } }
+
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 6px; overflow: hidden; background: var(--surface); align-self: flex-start; }
+.seg button { border: 0; background: transparent; padding: 7px 16px; cursor: pointer; font-weight: 500; font-size: 14px; }
+.seg button + button { border-left: 1px solid var(--line); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+.alt { font-size: 12.5px; }
+.sub-fields { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px; }
+.derived { font-size: 12.5px; color: var(--muted); }
+.derived b { color: var(--ink); font-family: var(--font-data); font-weight: 500; }
+.opt-intro { color: var(--muted); font-size: 13px; margin: -4px 0 10px; max-width: 70ch; }
+
+/* Readout */
+.readout { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 12px); display: grid; gap: 14px; }
+@media (max-width: 900px) { .readout { position: static; } }
+.status-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+.status-list li { display: flex; gap: 8px; align-items: flex-start; font-size: 13.5px; }
+.status-list li button { text-align: left; }
+.status-list .dot { flex: none; width: 8px; height: 8px; border-radius: 50%; margin-top: 6px; }
+.dot.missing { background: transparent; border: 1.5px solid var(--warn); }
+.dot.err { background: var(--err); }
+.dot.warn { background: var(--warn); }
+.dot.info { background: var(--info); }
+.status-sum { font-family: var(--font-display); font-weight: 600; font-size: 15px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px; }
+.status-sum.ready { color: var(--ok); }
+.status-sum.notready { color: var(--warn); }
+
+.res-h { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
+.res-h h3 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.res-block + .res-block { border-top: 1px solid var(--line); margin-top: 14px; padding-top: 14px; }
+.res-row { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.2em; align-items: center; gap: 10px; padding: 5px 0; }
+.res-row .nm { font-size: 14px; }
+.res-row .val { font-family: var(--font-data); font-weight: 600; font-size: 17px; text-align: right; font-variant-numeric: tabular-nums; }
+.res-row.primary .nm { font-weight: 600; }
+.res-row.primary .val { font-size: 26px; color: var(--accent); }
+.bar { position: relative; height: 8px; background: var(--sunken); border-radius: 4px; overflow: hidden; }
+.bar i { position: absolute; inset: 0 auto 0 0; background: var(--ink); border-radius: 4px; opacity: .78; }
+.res-row.primary .bar i { background: var(--accent); opacity: 1; }
+.scale { display: grid; grid-template-columns: 7.5em minmax(0, 1fr) 4.2em; gap: 10px; font-size: 10.5px; color: var(--muted); font-family: var(--font-data); }
+.scale span { display: flex; justify-content: space-between; }
+.res-empty { color: var(--muted); font-size: 14px; padding: 6px 0 2px; }
+.rings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; margin: 4px 0 0; }
+.ring { margin: 0; display: grid; justify-items: center; gap: 6px; text-align: center; }
+.ring .dial { position: relative; width: 100%; max-width: 104px; aspect-ratio: 1; }
+.ring svg { width: 100%; height: 100%; display: block; }
+.ring .trk { fill: none; stroke: var(--sunken); stroke-width: 9; }
+.ring .arc { fill: none; stroke: var(--ink); stroke-width: 9; stroke-linecap: round; opacity: .8; }
+.ring.key .arc { stroke: var(--accent); opacity: 1; }
+.ring.key .pct { color: var(--accent); font-size: 24px; }
+.ring figcaption em { font-style: normal; font-size: 11px; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: 1px 7px; margin-top: 3px; justify-self: center; white-space: nowrap; }
+.ring .pct { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-family: var(--font-data); font-weight: 600; font-size: 21px; font-variant-numeric: tabular-nums; letter-spacing: -0.02em; }
+.ring .pct small { font-size: .55em; font-weight: 500; margin-left: 1px; }
+.ring figcaption { display: grid; line-height: 1.25; }
+.ring figcaption b { font-size: 13.5px; font-weight: 600; }
+.ring figcaption span { font-size: 11.5px; color: var(--muted); min-height: 1.25em; }
+.people { margin-top: 14px; display: grid; gap: 8px; background: var(--sunken); border-radius: var(--radius); padding: 10px 12px; }
+.people .dots { display: grid; grid-template-columns: repeat(20, 1fr); gap: 3px; }
+.people .dots i { aspect-ratio: 1; border-radius: 50%; background: var(--surface); border: 1px solid var(--line); }
+.people .dots i.on { background: var(--accent); border-color: var(--accent); }
+.people p { margin: 0; font-size: 13px; line-height: 1.4; }
+.people p b { color: var(--accent); }
+
+/* Recommendations */
+.recs, .guide { margin-top: 20px; }
+.rec-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; }
+.rec { border: 1px solid var(--line); border-radius: var(--radius); padding: 12px 14px; background: var(--surface); }
+.rec-h { display: flex; justify-content: space-between; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 6px; }
+.rec h3 { font-size: 16px; }
+.rec ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 14px; }
+.tag { font-family: var(--font-data); font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.tag.low { background: var(--ok-soft); color: var(--ok); }
+.tag.borderline { background: var(--warn-soft); color: var(--warn); }
+.tag.intermediate { background: var(--accent-soft); color: var(--accent); }
+.tag.high { background: var(--accent); color: var(--accent-ink); }
+.data.over { color: var(--err); }
+.data.ok { color: var(--ok); }
+.guide h3 { font-size: 15px; margin: 4px 0 8px; }
+.guide h3:not(:first-child) { margin-top: 18px; }
+.g-wrap { overflow-x: auto; }
+.g-table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.g-table th { text-align: left; font-weight: 500; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; padding: 4px 10px 6px; border-bottom: 1px solid var(--line); }
+.g-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.g-table td:first-child { width: 13em; }
+.g-table td:first-child span { display: block; color: var(--muted); font-size: 12.5px; }
+.g-table td:last-child { white-space: nowrap; }
+.g-table td:nth-child(2) { white-space: normal; }
+.g-table tr.here td { background: var(--accent-soft); }
+.g-table tr.here td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+.g-table tr.here td:first-child b::after { content: " ← this patient"; font-weight: 600; color: var(--accent); font-size: 12px; white-space: nowrap; }
+.g-notes { margin: 10px 0 0; padding-left: 18px; font-size: 13.5px; display: grid; gap: 4px; }
+.g-src { font-size: 12.5px; color: var(--muted); margin: 14px 0 0; }
+.g-src a { color: var(--info); }
+.needed { border: 1.5px solid var(--warn); background: var(--warn-soft); border-radius: var(--radius); padding: 12px 14px; }
+.needed h3 { font-size: 15px; font-weight: 600; color: var(--warn); margin-bottom: 8px; }
+.needed h3 + p { margin: -4px 0 8px; font-size: 13px; color: var(--ink); }
+.needed ol { margin: 0; padding-left: 22px; display: grid; gap: 6px; }
+.needed li { font-size: 14px; }
+.needed li::marker { color: var(--warn); font-weight: 600; font-family: var(--font-data); }
+.needed button { background: none; border: 0; padding: 0; font: inherit; font-weight: 600; color: var(--ink); text-decoration: underline; text-decoration-color: var(--warn); text-underline-offset: 3px; cursor: pointer; }
+.needed .hint { display: block; color: var(--muted); font-size: 12.5px; }
+.needed .fix { margin-top: 10px; padding-top: 8px; border-top: 1px solid var(--warn); }
+.needed .fix h4 { margin: 0 0 6px; font-size: 13px; color: var(--err); font-family: var(--font-display); }
+.needed .fix ol li::marker { color: var(--err); }
+#cap-needed { margin-top: 14px; }
+
+/* Say or type a change */
+.talk { margin-bottom: 20px; }
+.talk-row { display: flex; gap: 10px; align-items: stretch; }
+.mic { flex: none; width: 52px; border-radius: 50%; height: 52px; align-self: center; border: 1.5px solid var(--accent); background: var(--surface); color: var(--accent); cursor: pointer; display: grid; place-items: center; }
+.mic:hover { background: var(--accent-soft); }
+.mic svg { width: 24px; height: 24px; }
+.mic[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); animation: pulse 1.4s ease-out infinite; }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 var(--accent-soft); } 100% { box-shadow: 0 0 0 12px transparent; } }
+@media (prefers-reduced-motion: reduce) { .mic[aria-pressed="true"] { animation: none; } }
+textarea#talk { flex: 1; min-width: 0; min-height: 52px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 8px 12px; font-size: 15px; line-height: 1.4; }
+.talk-row .btn { align-self: center; }
+.talk-out { margin-top: 10px; font-size: 14px; display: grid; gap: 6px; }
+.talk-out:empty { display: none; }
+.talk-out ul { margin: 0; padding-left: 18px; }
+.talk-out .data { font-family: var(--font-data); }
+.talk-out .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.talk-out .still { color: var(--warn); }
+.talk-out .still button { background: none; border: 0; padding: 0; font: inherit; color: var(--ink); text-decoration: underline; text-decoration-color: var(--warn); text-underline-offset: 3px; cursor: pointer; }
+/* Floating checklist of required values */
+.checklist { position: fixed; z-index: 29; left: max(16px, env(safe-area-inset-left, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: 220px; max-height: calc(100vh - 40px); overflow-y: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: var(--radius); box-shadow: 0 6px 20px rgba(0,0,0,.18); font-size: 13px; }
+.checklist.ready { border-left-color: var(--ok); }
+.ck-head { width: 100%; display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 9px 10px 9px 12px; color: var(--ink); cursor: pointer; text-align: left; font: inherit; }
+.ck-title { font-weight: 600; flex: 1; }
+.ck-pill { font-family: var(--font-data); font-size: 11.5px; font-weight: 600; padding: 1px 7px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); white-space: nowrap; }
+.checklist.ready .ck-pill { background: var(--ok-soft); color: var(--ok); }
+.ck-chev { width: 8px; height: 8px; border-right: 1.5px solid var(--muted); border-bottom: 1.5px solid var(--muted); transform: rotate(45deg) translate(-2px, -2px); transition: transform .15s; }
+.checklist.collapsed .ck-chev { transform: rotate(-135deg) translate(-2px, -2px); }
+.checklist.collapsed .ck-body { display: none; }
+.checklist.collapsed { width: auto; }
+.ck-title { white-space: nowrap; }
+.checklist:not(.collapsed) .ck-pill { display: none; }
+.ck-body { padding: 0 10px 10px 12px; }
+.ck-count { color: var(--muted); font-size: 12px; margin-bottom: 6px; }
+.checklist.ready .ck-count { color: var(--ok); font-weight: 600; }
+.ck-track { height: 4px; border-radius: 2px; background: var(--sunken); margin-bottom: 8px; overflow: hidden; }
+.ck-track i { display: block; height: 100%; background: var(--warn); transition: width .2s; }
+.checklist.ready .ck-track i { background: var(--ok); }
+.ck-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 1px; }
+.ck-list button { width: 100%; display: flex; align-items: center; gap: 8px; background: none; border: 0; padding: 3px 4px; border-radius: 4px; font: inherit; color: var(--ink); cursor: pointer; text-align: left; }
+.ck-list button:hover { background: var(--sunken); }
+.ck-list .box { flex: none; width: 15px; height: 15px; border-radius: 4px; border: 1.5px solid var(--warn); display: grid; place-items: center; font-size: 11px; font-weight: 700; line-height: 1; }
+.ck-list .t { flex: 1; min-width: 0; }
+.ck-list .v { font-family: var(--font-data); font-size: 11.5px; color: var(--muted); white-space: nowrap; }
+.ck-list li.todo .t { font-weight: 600; }
+.ck-list li.done .box { background: var(--ok); border-color: var(--ok); color: var(--surface); }
+.ck-list li.done .t { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
+.ck-list li.bad .box { background: var(--err); border-color: var(--err); color: var(--surface); }
+.ck-list li.bad .t { color: var(--err); font-weight: 600; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+@media (max-width: 900px) {
+  .checklist { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(240px, calc(100vw - 108px)); max-height: calc(100vh - 140px); }
+}
+
+/* Floating mic, reachable while scrolling */
+.fab { position: fixed; z-index: 30; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(20px + env(safe-area-inset-bottom, 0px)); width: 60px; height: 60px; border-radius: 50%; border: 0; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.25); }
+.fab svg { width: 26px; height: 26px; }
+.wrap { padding-bottom: 80px; }
+.fab-clear { position: fixed; z-index: 30; right: calc(max(16px, env(safe-area-inset-right, 0px)) + 72px); bottom: calc(26px + env(safe-area-inset-bottom, 0px)); height: 48px; padding: 0 18px; border-radius: 999px; border: 2px solid var(--accent); background: var(--surface); color: var(--accent); font-weight: 600; font-size: 15px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 4px 14px rgba(0,0,0,.18); }
+.fab-clear:hover { background: var(--accent); color: var(--accent-ink); }
+.toast { position: fixed; z-index: 31; left: 50%; transform: translateX(-50%); bottom: calc(24px + env(safe-area-inset-bottom, 0px)); display: flex; align-items: center; gap: 12px; background: var(--ink); color: var(--bg); padding: 9px 10px 9px 16px; border-radius: 999px; font-size: 14px; box-shadow: 0 6px 20px rgba(0,0,0,.25); white-space: nowrap; }
+.toast .btn { background: var(--bg); color: var(--ink); border-color: var(--bg); font-weight: 600; }
+body:has(#fab-card:not([hidden])) .fab-clear { display: none; }
+@media (max-width: 900px) {
+  .fab-clear { right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(136px + env(safe-area-inset-bottom, 0px)); width: 52px; height: 52px; padding: 0; justify-content: center; font-size: 18px; margin-right: 4px; }
+  .fab-clear .lbl { display: none; }
+  .toast { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); }
+}
+.fab:hover { filter: brightness(1.08); }
+.fab[aria-pressed="true"] { animation: pulse 1.4s ease-out infinite; }
+@media (prefers-reduced-motion: reduce) { .fab[aria-pressed="true"] { animation: none; } }
+.fab-card { position: fixed; z-index: 30; right: max(16px, env(safe-area-inset-right, 0px)); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); width: min(380px, calc(100vw - 32px)); max-height: calc(100vh - 140px); overflow-y: auto; background: var(--surface); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: 0 8px 28px rgba(0,0,0,.22); padding: 12px 14px 14px; display: grid; gap: 8px; }
+.fab-card .top { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.fab-card .top b { font-size: 14px; }
+.fab-card .x { border: 0; background: none; color: var(--muted); font-size: 20px; line-height: 1; padding: 2px 6px; cursor: pointer; }
+.fab-card .x:hover { color: var(--ink); }
+.fab-card textarea { width: 100%; min-height: 60px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 8px 10px; font-size: 15px; line-height: 1.4; }
+.fab-card .act { display: flex; gap: 8px; align-items: center; }
+.fab-card .talk-out { margin-top: 0; }
+.fab-card .talk-out .still { display: none; }
+/* Live "needed to calculate" strip inside the dictation card */
+.fab-need { display: grid; gap: 6px; border-radius: 6px; padding: 8px 10px; background: var(--warn-soft); border-left: 3px solid var(--warn); font-size: 13px; }
+.fab-need.ready { background: var(--ok-soft); border-left-color: var(--ok); }
+.fab-need .h { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-weight: 600; color: var(--warn); }
+.fab-need.ready .h { color: var(--ok); }
+.fab-need .trk { height: 4px; border-radius: 2px; background: var(--surface); overflow: hidden; }
+.fab-need .trk i { display: block; height: 100%; background: var(--warn); }
+.fab-need .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.fab-need .chips button { border: 1.5px dashed var(--warn); background: var(--surface); color: var(--ink); border-radius: 999px; padding: 3px 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+.fab-need .chips button.bad { border-style: solid; border-color: var(--err); color: var(--err); }
+.fab-need .res { display: grid; gap: 2px; font-family: var(--font-data); font-size: 13px; color: var(--ink); }
+.fab-need .res b { font-weight: 600; }
+.fab-mic2 { display: inline-flex; align-items: center; gap: 6px; border-color: var(--accent); color: var(--accent); font-weight: 600; }
+.fab-mic2 svg { width: 16px; height: 16px; }
+.fab-mic2[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); }
+.fab-card .act { flex-wrap: wrap; }
+/* Phones: the card becomes a bottom sheet that rides above the keyboard; other floaters step aside */
+@media (max-width: 900px) {
+  body.fab-open .fab-card { left: 0; right: 0; width: auto; bottom: var(--kb, 0px); border-radius: 14px 14px 0 0; border-bottom: 0; max-height: min(70vh, calc(var(--vvh, 100vh) - 16px)); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); padding-left: max(14px, env(safe-area-inset-left, 0px)); padding-right: max(14px, env(safe-area-inset-right, 0px)); }
+  body.fab-open .fab, body.fab-open .checklist, body.fab-open .mbar, body.fab-open .fab-clear { display: none; }
+  .fab-mic2 { padding: 8px 14px; font-size: 15px; }
+  .fab-card #fab-apply { padding: 8px 14px; font-size: 15px; }
+}
+@media (max-width: 900px) {
+  .fab { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); }
+  .fab-card { bottom: calc(138px + env(safe-area-inset-bottom, 0px)); max-height: calc(100vh - 190px); }
+}
+@media (max-width: 520px) { .talk-row { flex-wrap: wrap; } textarea#talk { flex-basis: calc(100% - 62px); } .talk-row .btn { width: 100%; } }
+.res-na { color: var(--muted); font-size: 13px; }
+.model { font-size: 12.5px; color: var(--muted); margin-top: 12px; }
+.model b { color: var(--ink); font-weight: 600; }
+.res-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
+.copied { font-size: 12.5px; color: var(--ok); }
+pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 12px; background: var(--sunken); border-radius: 6px; padding: 10px; margin: 10px 0 0; user-select: all; }
+
+.foot { margin-top: 22px; color: var(--muted); font-size: 12.5px; display: grid; gap: 6px; max-width: 90ch; }
+.foot a { color: var(--info); }
+
+/* Phone status bar */
+.mbar { display: none; }
+@media (max-width: 900px) {
+  .mbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; align-items: center; justify-content: space-between; gap: 10px;
+    padding: 10px max(16px, env(safe-area-inset-right, 0px)) calc(10px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-left, 0px));
+    background: var(--ink); color: var(--bg); font-size: 14px; }
+  .mbar button { background: transparent; color: var(--bg); border: 1px solid currentColor; border-radius: 6px; padding: 5px 10px; font-size: 13px; }
+  .mbar b { font-family: var(--font-data); }
+  .mbar #mbar-text { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mbar button { flex: none; }
+}
+</style>
+
+<div class="wrap">
+  <header class="mast">
+    <div>
+      <h1>PREVENT <span>Risk</span> Calculator</h1>
+      <p>10- and 30-year risk of total CVD, ASCVD and heart failure from the AHA PREVENT equations, for adults 30–79 without known cardiovascular disease.</p>
+    </div>
+    <div class="tools">
+      <button class="btn" id="btn-example" type="button">Load example</button>
+      <button class="btn big clear" id="btn-clear" type="button"><span aria-hidden="true">✕</span> Clear all</button>
+    </div>
+  </header>
+
+  <div class="banner" id="example-banner" hidden>
+    <span><b>Example patient.</b> These values are a sample so you can see the calculator working. Clear them before entering a real patient.</span>
+    <button class="btn small" type="button" id="btn-clear-2">Clear and start</button>
+  </div>
+
+  <section class="panel talk" aria-labelledby="talk-h">
+    <div class="panel-h">
+      <h2 id="talk-h">Say or type a change</h2>
+      <span class="hint">“BP 150 and she’s on a statin”, “quit smoking”, “remove the A1c”</span>
+    </div>
+    <div class="panel-b">
+      <div class="talk-row">
+        <button class="mic" id="btn-mic" type="button" aria-pressed="false" aria-label="Talk: dictate values or changes" title="Talk">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/><path d="M8 21h8"/></svg>
+        </button>
+        <textarea id="talk" rows="2" placeholder="Tap the mic and talk, or type here and press Enter. A whole patient works too: “62 year old man, BP 138, total 210, HDL 44…”"></textarea>
+        <button class="btn primary" type="button" id="btn-talk">Apply</button>
+      </div>
+      <div class="cap-status" id="talk-status" role="status"></div>
+      <div class="talk-out" id="talk-out"></div>
+    </div>
+  </section>
+
+  <section class="panel capture" aria-labelledby="cap-h">
+    <div class="panel-h">
+      <h2 id="cap-h">Fill from photos or text</h2>
+      <span class="hint">Lab reports, vitals screens, med lists, clinic notes</span>
+    </div>
+    <div class="panel-b">
+      <div class="cap-grid">
+        <div class="drop" id="drop">
+          <div class="lead" id="drop-lead">Drop photos here or paste a screenshot</div>
+          <div class="sub" id="drop-sub">Several pages at once is fine. Claude reads them and fills what it finds.</div>
+          <div class="row" id="photo-btns">
+            <label class="btn small filebtn">Choose photos<input type="file" id="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple></label>
+            <label class="btn small filebtn">Take photo<input type="file" id="cam" accept="image/*" capture="environment"></label>
+          </div>
+          <div class="thumbs" id="thumbs"></div>
+        </div>
+        <textarea id="paste" placeholder="Or paste text here, e.g.&#10;58 yo M, BP 142/88 on lisinopril&#10;TC 212, HDL 41, A1c 6.1&#10;Cr 1.1, BMI 31, former smoker&#10;Meds: atorvastatin 20 mg"></textarea>
+      </div>
+      <div class="cap-actions">
+        <button class="btn primary" type="button" id="btn-extract">Fill the form</button>
+        <button class="btn" type="button" id="btn-stop" hidden>Stop</button>
+        <span class="cap-status" id="cap-status" role="status"></span>
+      </div>
+      <div class="cap-note" id="cap-note"></div>
+      <div class="review" id="review" hidden></div>
+      <div id="cap-needed" hidden></div>
+    </div>
+  </section>
+
+  <div class="grid">
+    <form class="panel" id="form" autocomplete="off" novalidate>
+      <div class="group">
+        <div class="group-h"><h3>Patient</h3></div>
+        <div class="fields">
+          <div class="field" data-k="sex">
+            <span class="lbl" id="l-sex">Sex</span>
+            <div class="seg" role="group" aria-labelledby="l-sex" id="f-sex">
+              <button type="button" data-val="female" aria-pressed="false">Female</button><button type="button" data-val="male" aria-pressed="false">Male</button>
+            </div>
+            <div class="meta"></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="age">
+            <label for="f-age">Age</label>
+            <div class="ctl"><input id="f-age" inputmode="decimal"><span class="unit">years</span></div>
+            <div class="meta"><span>30–79</span></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Cholesterol</h3>
+          <select id="u-chol" aria-label="Cholesterol units"><option value="mgdl">mg/dL</option><option value="mmol">mmol/L</option></select>
+        </div>
+        <div class="fields">
+          <div class="field" data-k="tc">
+            <label for="f-tc">Total cholesterol</label>
+            <div class="ctl"><input id="f-tc" inputmode="decimal"><span class="unit" data-unit="chol">mg/dL</span></div>
+            <div class="meta"><span data-range="tc">130–320 mg/dL</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="hdl">
+            <label for="f-hdl">HDL cholesterol</label>
+            <div class="ctl"><input id="f-hdl" inputmode="decimal"><span class="unit" data-unit="chol">mg/dL</span></div>
+            <div class="meta"><span data-range="hdl">20–100 mg/dL</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="statin">
+            <span class="lbl" id="l-statin">Taking a statin</span>
+            <div class="seg" role="group" aria-labelledby="l-statin" id="f-statin">
+              <button type="button" data-val="1" aria-pressed="false">Yes</button><button type="button" data-val="0" aria-pressed="false">No</button>
+            </div>
+            <div class="meta"></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Blood pressure</h3></div>
+        <div class="fields">
+          <div class="field" data-k="sbp">
+            <label for="f-sbp">Systolic blood pressure</label>
+            <div class="ctl"><input id="f-sbp" inputmode="decimal"><span class="unit">mm Hg</span></div>
+            <div class="meta"><span>90–200</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="bpmed">
+            <span class="lbl" id="l-bpmed">Taking blood pressure medicine</span>
+            <div class="seg" role="group" aria-labelledby="l-bpmed" id="f-bpmed">
+              <button type="button" data-val="1" aria-pressed="false">Yes</button><button type="button" data-val="0" aria-pressed="false">No</button>
+            </div>
+            <div class="meta"></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Metabolic</h3></div>
+        <div class="fields">
+          <div class="field" data-k="dm">
+            <span class="lbl" id="l-dm">Diabetes</span>
+            <div class="seg" role="group" aria-labelledby="l-dm" id="f-dm">
+              <button type="button" data-val="1" aria-pressed="false">Yes</button><button type="button" data-val="0" aria-pressed="false">No</button>
+            </div>
+            <div class="meta"></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="smoker">
+            <span class="lbl" id="l-smoker">Current smoker</span>
+            <div class="seg" role="group" aria-labelledby="l-smoker" id="f-smoker">
+              <button type="button" data-val="1" aria-pressed="false">Yes</button><button type="button" data-val="0" aria-pressed="false">No</button>
+            </div>
+            <div class="meta"></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="bmi">
+            <label for="f-bmi">Body mass index</label>
+            <div class="ctl" id="bmi-direct"><input id="f-bmi" inputmode="decimal"><span class="unit">kg/m²</span></div>
+            <div class="sub-fields" id="bmi-calc" hidden>
+              <div class="ctl"><input id="f-ht" inputmode="decimal" aria-label="Height"><select class="unit" id="u-ht" aria-label="Height units"><option value="cm">cm</option><option value="in">in</option></select></div>
+              <div class="ctl"><input id="f-wt" inputmode="decimal" aria-label="Weight"><select class="unit" id="u-wt" aria-label="Weight units"><option value="kg">kg</option><option value="lb">lb</option></select></div>
+            </div>
+            <div class="meta"><span>18.5–39.9</span><button type="button" class="linkish alt" id="bmi-toggle">From height and weight</button><span class="derived" id="bmi-derived"></span></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Kidney</h3></div>
+        <div class="fields">
+          <div class="field" data-k="egfr">
+            <label for="f-egfr">eGFR</label>
+            <div class="ctl" id="egfr-direct"><input id="f-egfr" inputmode="decimal"><span class="unit">mL/min/1.73m²</span></div>
+            <div class="ctl" id="egfr-calc" hidden><input id="f-creat" inputmode="decimal" aria-label="Serum creatinine"><select class="unit" id="u-creat" aria-label="Creatinine units"><option value="mgdl">mg/dL creatinine</option><option value="umol">µmol/L creatinine</option></select></div>
+            <div class="meta"><span>15–140</span><button type="button" class="linkish alt" id="egfr-toggle">From creatinine</button><span class="derived" id="egfr-derived"></span></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Optional predictors</h3></div>
+        <p class="opt-intro">Leave blank if unknown. Adding any of these switches to the matching PREVENT add-on model, the same way the AHA calculator does.</p>
+        <div class="fields">
+          <div class="field" data-k="uacr">
+            <label for="f-uacr">Urine albumin-creatinine ratio</label>
+            <div class="ctl"><input id="f-uacr" inputmode="decimal"><select class="unit" id="u-uacr" aria-label="UACR units"><option value="mgg">mg/g</option><option value="mgmmol">mg/mmol</option></select></div>
+            <div class="meta"><span data-range="uacr">0–25,000 mg/g</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="a1c">
+            <label for="f-a1c">HbA1c</label>
+            <div class="ctl"><input id="f-a1c" inputmode="decimal"><select class="unit" id="u-a1c" aria-label="HbA1c units"><option value="pct">%</option><option value="mmolmol">mmol/mol</option></select></div>
+            <div class="meta"><span data-range="a1c">3–15 %</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="sdi">
+            <label for="f-sdi">Social Deprivation Index decile</label>
+            <div class="ctl"><input id="f-sdi" inputmode="numeric"><span class="unit">1–10</span></div>
+            <div class="meta"><span>From ZIP code; 10 is most deprived</span></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
+    </form>
+
+    <aside class="readout" aria-label="Status and results">
+      <section class="panel" id="status-panel" aria-labelledby="st-h">
+        <div class="panel-h"><h2 id="st-h">Inputs</h2><label class="hint"><input type="checkbox" id="clamp"> Use nearest in-range value</label></div>
+        <div class="panel-b">
+          <div class="status-sum" id="status-sum"></div>
+          <ul class="status-list" id="status-list"></ul>
+        </div>
+      </section>
+      <section class="panel" id="results-panel" aria-labelledby="rs-h">
+        <div class="panel-h"><h2 id="rs-h">Estimated risk</h2></div>
+        <div class="panel-b" id="results"></div>
+      </section>
+    </aside>
+  </div>
+
+  <section class="panel recs" id="recs-panel" aria-labelledby="recs-h">
+    <div class="panel-h"><h2 id="recs-h">Recommendations for this patient</h2><span class="hint">Primary prevention, adults 30–79 without known CVD</span></div>
+    <div class="panel-b" id="recs"></div>
+  </section>
+
+  <section class="panel guide" id="guide-panel" aria-labelledby="guide-h">
+    <div class="panel-h"><h2 id="guide-h">General recommendations by risk</h2><span class="hint">The row that fits the current patient is highlighted</span></div>
+    <div class="panel-b">
+      <h3>Cholesterol: by 10-year PREVENT-ASCVD risk</h3>
+      <div class="g-wrap"><table class="g-table">
+        <thead><tr><th>Risk</th><th>Recommendation</th><th>Goals</th></tr></thead>
+        <tbody>
+          <tr data-row="chol-low"><td><b>Low</b><span>under 3%</span></td><td>Healthy lifestyle. A statin is not routinely recommended. Ages 30–59 with 30-year risk of 10% or more and LDL-C 160–189 mg/dL: a statin may be considered.</td><td>—</td></tr>
+          <tr data-row="chol-borderline"><td><b>Borderline</b><span>3% to under 5%</span></td><td>A statin is reasonable after a shared discussion. A coronary calcium (CAC) score can guide the choice: CAC 0 may allow waiting, CAC above 0 favors a statin.</td><td>LDL-C &lt;100<br>non-HDL-C &lt;130</td></tr>
+          <tr data-row="chol-intermediate"><td><b>Intermediate</b><span>5% to under 10%</span></td><td>A statin is recommended after a shared discussion. CAC can refine the decision when it is uncertain.</td><td>LDL-C &lt;100<br>non-HDL-C &lt;130</td></tr>
+          <tr data-row="chol-high"><td><b>High</b><span>10% or more</span></td><td>A statin is recommended, generally at higher intensity.</td><td>LDL-C &lt;70<br>non-HDL-C &lt;100</td></tr>
+        </tbody>
+      </table></div>
+      <ul class="g-notes">
+        <li>At any calculated risk: LDL-C 190 mg/dL or higher calls for a high-intensity statin; diabetes or CKD stage 3–4 at ages 40–75 calls for at least a moderate-intensity statin.</li>
+        <li>Not at goal on a statin: raise the intensity, or add ezetimibe or a PCSK9 inhibitor.</li>
+        <li>Measure lipoprotein(a) once in adulthood; 125 nmol/L or more marks higher risk.</li>
+      </ul>
+      <h3>Blood pressure: by stage and 10-year PREVENT total CVD risk</h3>
+      <div class="g-wrap"><table class="g-table">
+        <thead><tr><th>Blood pressure</th><th>Recommendation</th></tr></thead>
+        <tbody>
+          <tr data-row="bp-normal"><td><b>Normal</b><span>under 120/80</span></td><td>Keep up a healthy lifestyle.</td></tr>
+          <tr data-row="bp-elevated"><td><b>Elevated</b><span>120–129 / under 80</span></td><td>Lifestyle changes.</td></tr>
+          <tr data-row="bp-s1-low"><td><b>Stage 1, lower risk</b><span>130–139 / 80–89, CVD risk under 7.5%</span></td><td>Lifestyle changes for 3–6 months, then medicine if still 130/80 or higher.</td></tr>
+          <tr data-row="bp-s1-high"><td><b>Stage 1, higher risk</b><span>130–139 / 80–89, CVD risk 7.5% or more, or diabetes or CKD</span></td><td>Medicine plus lifestyle changes.</td></tr>
+          <tr data-row="bp-s2"><td><b>Stage 2</b><span>140 or more / 90 or more</span></td><td>Medicine plus lifestyle changes at any risk; a single-pill combination of two medicines is preferred.</td></tr>
+        </tbody>
+      </table></div>
+      <ul class="g-notes">
+        <li>Goal for most adults on treatment: under 130/80, with systolic under 120 encouraged when it can be reached safely.</li>
+      </ul>
+      <h3>For everyone</h3>
+      <ul class="g-notes">
+        <li>Heart-healthy eating pattern and at least 150 minutes a week of moderate activity.</li>
+        <li>Current smokers: advise quitting at every visit and offer counseling plus medicine.</li>
+        <li>Overweight or obesity: support weight loss through diet, activity and, where appropriate, medicine.</li>
+        <li>Diabetes: an SGLT2 inhibitor or GLP-1 receptor agonist with proven cardiovascular benefit is worth considering.</li>
+      </ul>
+      <p class="g-src">Summarized from the <a href="https://doi.org/10.1161/CIR.0000000000001423" target="_blank" rel="noopener">2026 ACC/AHA multisociety dyslipidemia guideline</a>, the <a href="https://doi.org/10.1161/HYP.0000000000000249" target="_blank" rel="noopener">2025 AHA/ACC high blood pressure guideline</a> and the <a href="https://doi.org/10.1161/CIR.0000000000000678" target="_blank" rel="noopener">2019 ACC/AHA primary prevention guideline</a>. A guide for discussion, not a substitute for clinical judgment. Check the full guidelines for details and recommendation classes.</p>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <div>Use for adults 30–79 without known CVD. Not for people with known CVD, LVEF &lt;40%, CAC ≥300, pathogenic inherited cardiovascular variants, end-stage kidney disease, or life expectancy under one year. 30-year estimates are given for ages 30–59.</div>
+    <div>Equations: Khan SS et al., <a href="https://www.ahajournals.org/doi/10.1161/CIRCULATIONAHA.123.067626" target="_blank" rel="noopener">Circulation 2024;149:430–449</a>, with the October 14, 2026 HbA1c correction. Coefficients, model selection and edge-case handling were checked term by term against the <a href="https://professional.heart.org/en/guidelines-and-statements/prevent-calculator" target="_blank" rel="noopener">AHA online calculator</a>. SDI is entered as a decile here; the AHA tool looks it up from ZIP code. eGFR from creatinine uses CKD-EPI 2021.</div>
+    <div>Values read from photos or text are proposals. Check each one against the source before acting on a result.</div>
+  </footer>
+</div>
+
+<aside class="checklist" id="checklist" aria-label="Values needed for the calculation">
+  <button type="button" class="ck-head" id="ck-toggle" aria-expanded="true" aria-controls="ck-body">
+    <span class="ck-title">Needed to calculate</span><span class="ck-pill" id="ck-pill"></span><span class="ck-chev" aria-hidden="true"></span>
+  </button>
+  <div class="ck-body" id="ck-body">
+    <div class="ck-count" id="ck-count"></div>
+    <div class="ck-track"><i id="ck-bar"></i></div>
+    <ol class="ck-list" id="ck-list"></ol>
+  </div>
+</aside>
+<div class="fab-card" id="fab-card" role="dialog" aria-labelledby="fab-h" hidden>
+  <div class="top"><b id="fab-h">Say or type a change</b><button class="x" type="button" id="fab-close" aria-label="Close">×</button></div>
+  <div class="fab-need" id="fab-need" aria-live="polite"></div>
+  <textarea id="fab-talk" rows="2" placeholder="Talk now, or type a change and press Enter"></textarea>
+  <div class="act"><button class="btn small fab-mic2" type="button" id="fab-mic2" aria-pressed="false" aria-label="Talk: dictate a change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg><span class="mic-lbl">Talk</span></button><button class="btn primary small" type="button" id="fab-apply">Apply</button><span class="cap-status" id="fab-status" role="status"></span></div>
+  <div class="talk-out" id="fab-out"></div>
+</div>
+<div class="toast" id="toast" role="status" hidden><span id="toast-text"></span><button class="btn small undo-btn" type="button">Undo</button></div>
+<button class="fab-clear" id="fab-clear" type="button" aria-label="Clear all values"><span aria-hidden="true">✕</span><span class="lbl">Clear all</span></button>
+<button class="fab" id="fab-mic" type="button" aria-pressed="false" aria-label="Talk: dictate a change" title="Talk">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/><path d="M8 21h8"/></svg>
+</button>
+<div class="mbar" id="mbar"><span id="mbar-text"></span><button type="button" id="mbar-btn">View</button></div>
+
+<script>
+const COEFS = {"base_10":{"women_cvd":{"age_per_10_years":0.7939329,"non_hdl_c_per_1_mmol_l":0.0305239,"hdl_c_per_0.3_mmol_l":-0.1606857,"sbp_lt110_per_20_mmhg":-0.2394003,"sbp_gteq110_per_20_mmhg":0.3600781,"diabetes":0.8667604,"current_smoking":0.5360739,"egfr_lt60_per_15_ml":0.6045917,"egfr_gteq60_per_15_ml":0.0433769,"anti_hypertensive_use":0.3151672,"statin_use":-0.1477655,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0663612,"treated_non_hdl_c":0.1197879,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0819715,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0306769,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0946348,"age_per_10yr_x_diabetes":-0.27057,"age_per_10yr_x_current_smoking":-0.078715,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1637806,"const":-3.307728},"men_cvd":{"age_per_10_years":0.7688528,"non_hdl_c_per_1_mmol_l":0.0736174,"hdl_c_per_0.3_mmol_l":-0.0954431,"sbp_lt110_per_20_mmhg":-0.4347345,"sbp_gteq110_per_20_mmhg":0.3362658,"diabetes":0.7692857,"current_smoking":0.4386871,"egfr_lt60_per_15_ml":0.5378979,"egfr_gteq60_per_15_ml":0.0164827,"anti_hypertensive_use":0.288879,"statin_use":-0.1337349,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0475924,"treated_non_hdl_c":0.150273,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0517874,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0191169,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1049477,"age_per_10yr_x_diabetes":-0.2251948,"age_per_10yr_x_current_smoking":-0.0895067,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1543702,"const":-3.031168},"women_ascvd":{"age_per_10_years":0.719883,"non_hdl_c_per_1_mmol_l":0.1176967,"hdl_c_per_0.3_mmol_l":-0.151185,"sbp_lt110_per_20_mmhg":-0.0835358,"sbp_gteq110_per_20_mmhg":0.3592852,"diabetes":0.8348585,"current_smoking":0.4831078,"egfr_lt60_per_15_ml":0.4864619,"egfr_gteq60_per_15_ml":0.0397779,"anti_hypertensive_use":0.2265309,"statin_use":-0.0592374,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0395762,"treated_non_hdl_c":0.0844423,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0567839,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0325692,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1035985,"age_per_10yr_x_diabetes":-0.2417542,"age_per_10yr_x_current_smoking":-0.0791142,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1671492,"const":-3.819975},"men_ascvd":{"age_per_10_years":0.7099847,"non_hdl_c_per_1_mmol_l":0.1658663,"hdl_c_per_0.3_mmol_l":-0.1144285,"sbp_lt110_per_20_mmhg":-0.2837212,"sbp_gteq110_per_20_mmhg":0.3239977,"diabetes":0.7189597,"current_smoking":0.3956973,"egfr_lt60_per_15_ml":0.3690075,"egfr_gteq60_per_15_ml":0.0203619,"anti_hypertensive_use":0.2036522,"statin_use":-0.0865581,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0322916,"treated_non_hdl_c":0.114563,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0300005,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0232747,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0927024,"age_per_10yr_x_diabetes":-0.2018525,"age_per_10yr_x_current_smoking":-0.0970527,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1217081,"const":-3.500655},"women_hf":{"age_per_10_years":0.8998235,"sbp_lt110_per_20_mmhg":-0.4559771,"sbp_gteq110_per_20_mmhg":0.3576505,"diabetes":1.038346,"current_smoking":0.583916,"bmi_lt30_per_5_kg_m2":-0.0072294,"bmi_gt30_per_5_kg_m2":0.2997706,"egfr_lt60_per_15_ml":0.7451638,"egfr_gteq60_per_15_ml":0.0557087,"anti_hypertensive_use":0.3534442,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0981511,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0946663,"age_per_10yr_x_diabetes":-0.3581041,"age_per_10yr_x_current_smoking":-0.1159453,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.003878,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1884289,"const":-4.310409},"men_hf":{"age_per_10_years":0.8972642,"sbp_lt110_per_20_mmhg":-0.6811466,"sbp_gteq110_per_20_mmhg":0.3634461,"diabetes":0.923776,"current_smoking":0.5023736,"bmi_lt30_per_5_kg_m2":-0.0485841,"bmi_gt30_per_5_kg_m2":0.3726929,"egfr_lt60_per_15_ml":0.6926917,"egfr_gteq60_per_15_ml":0.0251827,"anti_hypertensive_use":0.2980922,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0497731,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1289201,"age_per_10yr_x_diabetes":-0.3040924,"age_per_10yr_x_current_smoking":-0.1401688,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0068126,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1797778,"const":-3.946391}},"acr_10":{"women_cvd":{"age_per_10_years":0.7969249,"non_hdl_c_per_1_mmol_l":0.0256635,"hdl_c_per_0.3_mmol_l":-0.1588107,"sbp_lt110_per_20_mmhg":-0.2255701,"sbp_gteq110_per_20_mmhg":0.3396649,"diabetes":0.8047515,"current_smoking":0.5285338,"egfr_lt60_per_15_ml":0.4803511,"egfr_gteq60_per_15_ml":0.0434472,"anti_hypertensive_use":0.2985207,"statin_use":-0.1497787,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0742889,"treated_non_hdl_c":0.106756,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0778126,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0306768,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0907168,"age_per_10yr_x_diabetes":-0.2705122,"age_per_10yr_x_current_smoking":-0.0830564,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1389249,"ln_acr":0.1793037,"miss_ln_acr":0.0132073,"const":-3.738341},"men_cvd":{"age_per_10_years":0.7768655,"non_hdl_c_per_1_mmol_l":0.0659949,"hdl_c_per_0.3_mmol_l":-0.0951111,"sbp_lt110_per_20_mmhg":-0.420667,"sbp_gteq110_per_20_mmhg":0.3120151,"diabetes":0.698521,"current_smoking":0.4314669,"egfr_lt60_per_15_ml":0.3841364,"egfr_gteq60_per_15_ml":0.009384,"anti_hypertensive_use":0.2676494,"statin_use":-0.1390966,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0579315,"treated_non_hdl_c":0.1383719,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0488332,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0200406,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.102454,"age_per_10yr_x_diabetes":-0.2236355,"age_per_10yr_x_current_smoking":-0.089485,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1321848,"ln_acr":0.1887974,"miss_ln_acr":0.0916979,"const":-3.510705},"women_ascvd":{"age_per_10_years":0.7201999,"non_hdl_c_per_1_mmol_l":0.1135771,"hdl_c_per_0.3_mmol_l":-0.1493506,"sbp_lt110_per_20_mmhg":-0.0726677,"sbp_gteq110_per_20_mmhg":0.3436259,"diabetes":0.7773094,"current_smoking":0.4746662,"egfr_lt60_per_15_ml":0.3824646,"egfr_gteq60_per_15_ml":0.0394178,"anti_hypertensive_use":0.2125182,"statin_use":-0.0603046,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0466053,"treated_non_hdl_c":0.0733118,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0534262,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0325689,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0999887,"age_per_10yr_x_diabetes":-0.2411762,"age_per_10yr_x_current_smoking":-0.0826941,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1444737,"ln_acr":0.1501217,"miss_ln_acr":0.0050257,"const":-4.174614},"men_ascvd":{"age_per_10_years":0.7141718,"non_hdl_c_per_1_mmol_l":0.1602194,"hdl_c_per_0.3_mmol_l":-0.1139086,"sbp_lt110_per_20_mmhg":-0.2719456,"sbp_gteq110_per_20_mmhg":0.3058719,"diabetes":0.6600631,"current_smoking":0.3884022,"egfr_lt60_per_15_ml":0.2466316,"egfr_gteq60_per_15_ml":0.0151852,"anti_hypertensive_use":0.186167,"statin_use":-0.0894395,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0411884,"treated_non_hdl_c":0.1058212,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.028089,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0240427,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0912325,"age_per_10yr_x_diabetes":-0.2004894,"age_per_10yr_x_current_smoking":-0.096936,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1022867,"ln_acr":0.1510073,"miss_ln_acr":0.0556,"const":-3.85146},"women_hf":{"age_per_10_years":0.9145975,"sbp_lt110_per_20_mmhg":-0.4441346,"sbp_gteq110_per_20_mmhg":0.3260323,"diabetes":0.9611365,"current_smoking":0.5755787,"bmi_lt30_per_5_kg_m2":0.0008831,"bmi_gt30_per_5_kg_m2":0.2988964,"egfr_lt60_per_15_ml":0.5915291,"egfr_gteq60_per_15_ml":0.0556823,"anti_hypertensive_use":0.3314097,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.1078596,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0875231,"age_per_10yr_x_diabetes":-0.356859,"age_per_10yr_x_current_smoking":-0.1220248,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0053637,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1610389,"ln_acr":0.2197281,"miss_ln_acr":0.0326667,"const":-4.841506},"men_hf":{"age_per_10_years":0.9111795,"sbp_lt110_per_20_mmhg":-0.6693649,"sbp_gteq110_per_20_mmhg":0.3290082,"diabetes":0.8377655,"current_smoking":0.4978917,"bmi_lt30_per_5_kg_m2":-0.042749,"bmi_gt30_per_5_kg_m2":0.3624165,"egfr_lt60_per_15_ml":0.5075796,"egfr_gteq60_per_15_ml":0.0137716,"anti_hypertensive_use":0.2739963,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0645712,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1230039,"age_per_10yr_x_diabetes":-0.3013297,"age_per_10yr_x_current_smoking":-0.1410318,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0021531,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1548018,"ln_acr":0.2306299,"miss_ln_acr":0.1472194,"const":-4.556907}},"hba1c_10":{"women_cvd":{"age_per_10_years":0.7858178,"non_hdl_c_per_1_mmol_l":0.0194438,"hdl_c_per_0.3_mmol_l":-0.1521964,"sbp_lt110_per_20_mmhg":-0.2296681,"sbp_gteq110_per_20_mmhg":0.3465777,"diabetes":0.5366241,"current_smoking":0.5411682,"egfr_lt60_per_15_ml":0.5931898,"egfr_gteq60_per_15_ml":0.0472458,"anti_hypertensive_use":0.3158567,"statin_use":-0.1535174,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0687752,"treated_non_hdl_c":0.1054746,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0761119,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0307469,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0905966,"age_per_10yr_x_diabetes":-0.2241857,"age_per_10yr_x_current_smoking":-0.080186,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1667286,"hba1c_minus_5.3_x_diabetes":0.1338348,"hba1c_minus_5.3_x_1_minus_diabetes":0.1622409,"miss_hba1c":-0.0142496,"const":-3.306162},"men_cvd":{"age_per_10_years":0.7699177,"non_hdl_c_per_1_mmol_l":0.0605093,"hdl_c_per_0.3_mmol_l":-0.0888525,"sbp_lt110_per_20_mmhg":-0.417713,"sbp_gteq110_per_20_mmhg":0.3288657,"diabetes":0.4759471,"current_smoking":0.4385663,"egfr_lt60_per_15_ml":0.5334616,"egfr_gteq60_per_15_ml":0.0206431,"anti_hypertensive_use":0.2917524,"statin_use":-0.1383313,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0482622,"treated_non_hdl_c":0.1393796,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0463501,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0205926,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1037717,"age_per_10yr_x_diabetes":-0.1737697,"age_per_10yr_x_current_smoking":-0.0915839,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1637039,"hba1c_minus_5.3_x_diabetes":0.13159,"hba1c_minus_5.3_x_1_minus_diabetes":0.1295185,"miss_hba1c":-0.0128373,"const":-3.040901},"women_ascvd":{"age_per_10_years":0.7111831,"non_hdl_c_per_1_mmol_l":0.106797,"hdl_c_per_0.3_mmol_l":-0.1425745,"sbp_lt110_per_20_mmhg":-0.0736824,"sbp_gteq110_per_20_mmhg":0.3480844,"diabetes":0.5112951,"current_smoking":0.4880292,"egfr_lt60_per_15_ml":0.4754997,"egfr_gteq60_per_15_ml":0.0438132,"anti_hypertensive_use":0.2259093,"statin_use":-0.0648872,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0437645,"treated_non_hdl_c":0.0697082,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0506382,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0327475,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0996442,"age_per_10yr_x_diabetes":-0.1924338,"age_per_10yr_x_current_smoking":-0.0803539,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1682586,"hba1c_minus_5.3_x_diabetes":0.1339055,"hba1c_minus_5.3_x_1_minus_diabetes":0.1596461,"miss_hba1c":0.0015678,"const":-3.838746},"men_ascvd":{"age_per_10_years":0.7064146,"non_hdl_c_per_1_mmol_l":0.1532267,"hdl_c_per_0.3_mmol_l":-0.1082166,"sbp_lt110_per_20_mmhg":-0.2675288,"sbp_gteq110_per_20_mmhg":0.3173809,"diabetes":0.432604,"current_smoking":0.3958842,"egfr_lt60_per_15_ml":0.3665014,"egfr_gteq60_per_15_ml":0.0250243,"anti_hypertensive_use":0.2061158,"statin_use":-0.0899988,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0334959,"treated_non_hdl_c":0.1034168,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0255406,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0247538,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0917441,"age_per_10yr_x_diabetes":-0.1499195,"age_per_10yr_x_current_smoking":-0.098089,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1305231,"hba1c_minus_5.3_x_diabetes":0.1157161,"hba1c_minus_5.3_x_1_minus_diabetes":0.1288303,"miss_hba1c":-0.0010001,"const":-3.51835},"women_hf":{"age_per_10_years":0.8997391,"sbp_lt110_per_20_mmhg":-0.4422749,"sbp_gteq110_per_20_mmhg":0.3378691,"diabetes":0.681284,"current_smoking":0.5886005,"bmi_lt30_per_5_kg_m2":-0.0148657,"bmi_gt30_per_5_kg_m2":0.2958374,"egfr_lt60_per_15_ml":0.73447,"egfr_gteq60_per_15_ml":0.05926,"anti_hypertensive_use":0.3543475,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.1002139,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0878765,"age_per_10yr_x_diabetes":-0.303684,"age_per_10yr_x_current_smoking":-0.1178943,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.008345,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1912183,"hba1c_minus_5.3_x_diabetes":0.1856442,"hba1c_minus_5.3_x_1_minus_diabetes":0.1833083,"miss_hba1c":-0.0143112,"const":-4.288225},"men_hf":{"age_per_10_years":0.911787,"sbp_lt110_per_20_mmhg":-0.6568071,"sbp_gteq110_per_20_mmhg":0.3524645,"diabetes":0.5849752,"current_smoking":0.5014014,"bmi_lt30_per_5_kg_m2":-0.0512352,"bmi_gt30_per_5_kg_m2":0.365294,"egfr_lt60_per_15_ml":0.6892219,"egfr_gteq60_per_15_ml":0.0292377,"anti_hypertensive_use":0.3038296,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0515032,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1262343,"age_per_10yr_x_diabetes":-0.2449514,"age_per_10yr_x_current_smoking":-0.1392217,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0009592,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1917105,"hba1c_minus_5.3_x_diabetes":0.1652857,"hba1c_minus_5.3_x_1_minus_diabetes":0.1505859,"miss_hba1c":-0.0113444,"const":-3.961954}},"sdi_10":{"women_cvd":{"age_per_10_years":0.7754083,"non_hdl_c_per_1_mmol_l":0.0221756,"hdl_c_per_0.3_mmol_l":-0.1650828,"sbp_lt110_per_20_mmhg":-0.2180808,"sbp_gteq110_per_20_mmhg":0.3381188,"diabetes":0.8624372,"current_smoking":0.4663953,"egfr_lt60_per_15_ml":0.5919004,"egfr_gteq60_per_15_ml":0.0516821,"anti_hypertensive_use":0.3182166,"statin_use":-0.1460816,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0574455,"treated_non_hdl_c":0.1302287,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.083509,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0282181,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0952647,"age_per_10yr_x_diabetes":-0.2718966,"age_per_10yr_x_current_smoking":-0.0641738,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1717026,"sdi_decile_between_4_and_6":0.1442776,"sdi_decile_between_7_and_10":0.2421409,"miss_sdi":0.1885076,"const":-3.461564},"men_cvd":{"age_per_10_years":0.7756377,"non_hdl_c_per_1_mmol_l":0.0715325,"hdl_c_per_0.3_mmol_l":-0.0976775,"sbp_lt110_per_20_mmhg":-0.5186614,"sbp_gteq110_per_20_mmhg":0.3235653,"diabetes":0.7722496,"current_smoking":0.3761129,"egfr_lt60_per_15_ml":0.5180893,"egfr_gteq60_per_15_ml":0.0118451,"anti_hypertensive_use":0.2634094,"statin_use":-0.1455263,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0367013,"treated_non_hdl_c":0.1617785,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0507669,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0178356,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1059337,"age_per_10yr_x_diabetes":-0.2236755,"age_per_10yr_x_current_smoking":-0.0723216,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1548205,"sdi_decile_between_4_and_6":0.0889119,"sdi_decile_between_7_and_10":0.291897,"miss_sdi":0.1508151,"const":-3.159572},"women_ascvd":{"age_per_10_years":0.7028123,"non_hdl_c_per_1_mmol_l":0.1056078,"hdl_c_per_0.3_mmol_l":-0.1502263,"sbp_lt110_per_20_mmhg":-0.0488757,"sbp_gteq110_per_20_mmhg":0.3402681,"diabetes":0.838022,"current_smoking":0.4064592,"egfr_lt60_per_15_ml":0.4838394,"egfr_gteq60_per_15_ml":0.0480415,"anti_hypertensive_use":0.2270648,"statin_use":-0.0585626,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0349485,"treated_non_hdl_c":0.1017299,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.062389,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0285106,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1033711,"age_per_10yr_x_diabetes":-0.2477845,"age_per_10yr_x_current_smoking":-0.0544326,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1735372,"sdi_decile_between_4_and_6":0.1473705,"sdi_decile_between_7_and_10":0.2451878,"miss_sdi":0.1691593,"const":-3.955898},"men_ascvd":{"age_per_10_years":0.7150087,"non_hdl_c_per_1_mmol_l":0.1627339,"hdl_c_per_0.3_mmol_l":-0.1194988,"sbp_lt110_per_20_mmhg":-0.363659,"sbp_gteq110_per_20_mmhg":0.3179476,"diabetes":0.7156422,"current_smoking":0.3404477,"egfr_lt60_per_15_ml":0.3545754,"egfr_gteq60_per_15_ml":0.0157875,"anti_hypertensive_use":0.1786233,"statin_use":-0.1018269,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.028313,"treated_non_hdl_c":0.1209467,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0285806,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0247348,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0919494,"age_per_10yr_x_diabetes":-0.1981491,"age_per_10yr_x_current_smoking":-0.0776891,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1284899,"sdi_decile_between_4_and_6":0.0728242,"sdi_decile_between_7_and_10":0.2824453,"miss_sdi":0.1437348,"const":-3.624712},"women_hf":{"age_per_10_years":0.8819156,"sbp_lt110_per_20_mmhg":-0.4495491,"sbp_gteq110_per_20_mmhg":0.3457405,"diabetes":1.02632,"current_smoking":0.5371646,"bmi_lt30_per_5_kg_m2":-0.0168447,"bmi_gt30_per_5_kg_m2":0.2805126,"egfr_lt60_per_15_ml":0.7315223,"egfr_gteq60_per_15_ml":0.0651679,"anti_hypertensive_use":0.3491487,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0890335,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0971028,"age_per_10yr_x_diabetes":-0.3528078,"age_per_10yr_x_current_smoking":-0.106216,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0064998,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1899413,"sdi_decile_between_4_and_6":0.1343318,"sdi_decile_between_7_and_10":0.2496522,"miss_sdi":0.1915023,"const":-4.409382},"men_hf":{"age_per_10_years":0.894179,"sbp_lt110_per_20_mmhg":-0.7067398,"sbp_gteq110_per_20_mmhg":0.350241,"diabetes":0.9252453,"current_smoking":0.4364765,"bmi_lt30_per_5_kg_m2":-0.0866297,"bmi_gt30_per_5_kg_m2":0.3706765,"egfr_lt60_per_15_ml":0.6696768,"egfr_gteq60_per_15_ml":0.0237374,"anti_hypertensive_use":0.2688352,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0434892,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1297155,"age_per_10yr_x_diabetes":-0.299086,"age_per_10yr_x_current_smoking":-0.1079522,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0130483,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1797791,"sdi_decile_between_4_and_6":0.1235632,"sdi_decile_between_7_and_10":0.3592212,"miss_sdi":0.17924,"const":-4.058977}},"full_10":{"women_cvd":{"age_per_10_years":0.7716794,"non_hdl_c_per_1_mmol_l":0.0062109,"hdl_c_per_0.3_mmol_l":-0.1547756,"sbp_lt110_per_20_mmhg":-0.1933123,"sbp_gteq110_per_20_mmhg":0.3071217,"diabetes":0.496753,"current_smoking":0.466605,"egfr_lt60_per_15_ml":0.4780697,"egfr_gteq60_per_15_ml":0.0529077,"anti_hypertensive_use":0.3034892,"statin_use":-0.1556524,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0667026,"treated_non_hdl_c":0.1061825,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0742271,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0288245,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0875188,"age_per_10yr_x_diabetes":-0.2267102,"age_per_10yr_x_current_smoking":-0.0676125,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1493231,"sdi_decile_between_4_and_6":0.1361989,"sdi_decile_between_7_and_10":0.2261596,"miss_sdi":0.1804508,"ln_acr":0.1645922,"miss_ln_acr":0.0198413,"hba1c_minus_5.3_x_diabetes":0.1298513,"hba1c_minus_5.3_x_1_minus_diabetes":0.1412555,"miss_hba1c":-0.0031658,"const":-3.860385},"men_cvd":{"age_per_10_years":0.7847578,"non_hdl_c_per_1_mmol_l":0.0534485,"hdl_c_per_0.3_mmol_l":-0.0911282,"sbp_lt110_per_20_mmhg":-0.4921973,"sbp_gteq110_per_20_mmhg":0.2972415,"diabetes":0.4527054,"current_smoking":0.3726641,"egfr_lt60_per_15_ml":0.3886854,"egfr_gteq60_per_15_ml":0.0081661,"anti_hypertensive_use":0.2508052,"statin_use":-0.1538484,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0474695,"treated_non_hdl_c":0.1415382,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0436455,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0199549,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1022686,"age_per_10yr_x_diabetes":-0.1762507,"age_per_10yr_x_current_smoking":-0.0715873,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1428668,"sdi_decile_between_4_and_6":0.0802431,"sdi_decile_between_7_and_10":0.275073,"miss_sdi":0.144759,"ln_acr":0.1772853,"miss_ln_acr":0.1095674,"hba1c_minus_5.3_x_diabetes":0.1165698,"hba1c_minus_5.3_x_1_minus_diabetes":0.1048297,"miss_hba1c":-0.0230072,"const":-3.631387},"women_ascvd":{"age_per_10_years":0.7023067,"non_hdl_c_per_1_mmol_l":0.0898765,"hdl_c_per_0.3_mmol_l":-0.1407316,"sbp_lt110_per_20_mmhg":-0.0256648,"sbp_gteq110_per_20_mmhg":0.314511,"diabetes":0.4799217,"current_smoking":0.4062049,"egfr_lt60_per_15_ml":0.3847744,"egfr_gteq60_per_15_ml":0.0495174,"anti_hypertensive_use":0.2133861,"statin_use":-0.0678552,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0451416,"treated_non_hdl_c":0.0788187,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0535985,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0291762,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0961839,"age_per_10yr_x_diabetes":-0.2001466,"age_per_10yr_x_current_smoking":-0.0586472,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1537791,"sdi_decile_between_4_and_6":0.1413965,"sdi_decile_between_7_and_10":0.228136,"miss_sdi":0.1588908,"ln_acr":0.1371824,"miss_ln_acr":0.0061613,"hba1c_minus_5.3_x_diabetes":0.123192,"hba1c_minus_5.3_x_1_minus_diabetes":0.1410572,"miss_hba1c":0.005866,"const":-4.291503},"men_ascvd":{"age_per_10_years":0.7128741,"non_hdl_c_per_1_mmol_l":0.1465201,"hdl_c_per_0.3_mmol_l":-0.1125794,"sbp_lt110_per_20_mmhg":-0.3387216,"sbp_gteq110_per_20_mmhg":0.2980252,"diabetes":0.399583,"current_smoking":0.3379111,"egfr_lt60_per_15_ml":0.2582604,"egfr_gteq60_per_15_ml":0.0147769,"anti_hypertensive_use":0.1686621,"statin_use":-0.1073619,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0381038,"treated_non_hdl_c":0.1034169,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0228755,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0267453,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0897449,"age_per_10yr_x_diabetes":-0.1497464,"age_per_10yr_x_current_smoking":-0.077206,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1198368,"sdi_decile_between_4_and_6":0.0651121,"sdi_decile_between_7_and_10":0.2676683,"miss_sdi":0.1388492,"ln_acr":0.1375837,"miss_ln_acr":0.0652944,"hba1c_minus_5.3_x_diabetes":0.101282,"hba1c_minus_5.3_x_1_minus_diabetes":0.1092726,"miss_hba1c":-0.0112852,"const":-3.969788},"women_hf":{"age_per_10_years":0.884209,"sbp_lt110_per_20_mmhg":-0.421474,"sbp_gteq110_per_20_mmhg":0.3002919,"diabetes":0.6170359,"current_smoking":0.5380269,"bmi_lt30_per_5_kg_m2":-0.0191335,"bmi_gt30_per_5_kg_m2":0.2764302,"egfr_lt60_per_15_ml":0.5975847,"egfr_gteq60_per_15_ml":0.0654197,"anti_hypertensive_use":0.3313614,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.1002304,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0845363,"age_per_10yr_x_diabetes":-0.2989062,"age_per_10yr_x_current_smoking":-0.1111354,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0008104,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1666635,"sdi_decile_between_4_and_6":0.1213034,"sdi_decile_between_7_and_10":0.2314147,"miss_sdi":0.1819138,"ln_acr":0.1948135,"miss_ln_acr":0.0395368,"hba1c_minus_5.3_x_diabetes":0.176668,"hba1c_minus_5.3_x_1_minus_diabetes":0.1614911,"miss_hba1c":-0.0010583,"const":-4.896524},"men_hf":{"age_per_10_years":0.9095703,"sbp_lt110_per_20_mmhg":-0.6765184,"sbp_gteq110_per_20_mmhg":0.3111651,"diabetes":0.5535052,"current_smoking":0.4326811,"bmi_lt30_per_5_kg_m2":-0.0854286,"bmi_gt30_per_5_kg_m2":0.3551736,"egfr_lt60_per_15_ml":0.5102245,"egfr_gteq60_per_15_ml":0.015472,"anti_hypertensive_use":0.2570964,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0591177,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1219056,"age_per_10yr_x_diabetes":-0.2437577,"age_per_10yr_x_current_smoking":-0.105363,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0037907,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1660207,"sdi_decile_between_4_and_6":0.1106372,"sdi_decile_between_7_and_10":0.3371204,"miss_sdi":0.1694628,"ln_acr":0.2164607,"miss_ln_acr":0.1702805,"hba1c_minus_5.3_x_diabetes":0.148297,"hba1c_minus_5.3_x_1_minus_diabetes":0.1234088,"miss_hba1c":-0.0234637,"const":-4.663513}},"base_30":{"women_cvd":{"age_per_10_years":0.5503079,"age_per_10_years_squared":-0.0928369,"non_hdl_c_per_1_mmol_l":0.0409794,"hdl_c_per_0.3_mmol_l":-0.1663306,"sbp_lt110_per_20_mmhg":-0.1628654,"sbp_gteq110_per_20_mmhg":0.3299505,"diabetes":0.6793894,"current_smoking":0.3196112,"egfr_lt60_per_15_ml":0.1857101,"egfr_gteq60_per_15_ml":0.0553528,"anti_hypertensive_use":0.2894,"statin_use":-0.075688,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.056367,"treated_non_hdl_c":0.1071019,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0751438,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0301786,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0998776,"age_per_10yr_x_diabetes":-0.3206166,"age_per_10yr_x_current_smoking":-0.1607862,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1450788,"const":-1.318827},"men_cvd":{"age_per_10_years":0.4627309,"age_per_10_years_squared":-0.0984281,"non_hdl_c_per_1_mmol_l":0.0836088,"hdl_c_per_0.3_mmol_l":-0.1029824,"sbp_lt110_per_20_mmhg":-0.2140352,"sbp_gteq110_per_20_mmhg":0.2904325,"diabetes":0.5331276,"current_smoking":0.2141914,"egfr_lt60_per_15_ml":0.1155556,"egfr_gteq60_per_15_ml":0.0603775,"anti_hypertensive_use":0.232714,"statin_use":-0.0272112,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0384488,"treated_non_hdl_c":0.134192,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0511759,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0165865,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1101437,"age_per_10yr_x_diabetes":-0.2585943,"age_per_10yr_x_current_smoking":-0.1566406,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1166776,"const":-1.148204},"women_ascvd":{"age_per_10_years":0.4669202,"age_per_10_years_squared":-0.0893118,"non_hdl_c_per_1_mmol_l":0.1256901,"hdl_c_per_0.3_mmol_l":-0.1542255,"sbp_lt110_per_20_mmhg":-0.0018093,"sbp_gteq110_per_20_mmhg":0.322949,"diabetes":0.6296707,"current_smoking":0.268292,"egfr_lt60_per_15_ml":0.100106,"egfr_gteq60_per_15_ml":0.0499663,"anti_hypertensive_use":0.1875292,"statin_use":0.0152476,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0276123,"treated_non_hdl_c":0.0736147,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0521962,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0316918,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1046101,"age_per_10yr_x_diabetes":-0.2727793,"age_per_10yr_x_current_smoking":-0.1530907,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1299149,"const":-1.974074},"men_ascvd":{"age_per_10_years":0.3994099,"age_per_10_years_squared":-0.0937484,"non_hdl_c_per_1_mmol_l":0.1744643,"hdl_c_per_0.3_mmol_l":-0.120203,"sbp_lt110_per_20_mmhg":-0.0665117,"sbp_gteq110_per_20_mmhg":0.2753037,"diabetes":0.4790257,"current_smoking":0.1782635,"egfr_lt60_per_15_ml":-0.0218789,"egfr_gteq60_per_15_ml":0.0602553,"anti_hypertensive_use":0.1421182,"statin_use":0.0135996,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0218265,"treated_non_hdl_c":0.1013148,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0312619,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.020673,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0920935,"age_per_10yr_x_diabetes":-0.2159947,"age_per_10yr_x_current_smoking":-0.1548811,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0712547,"const":-1.736444},"women_hf":{"age_per_10_years":0.6254374,"age_per_10_years_squared":-0.0983038,"sbp_lt110_per_20_mmhg":-0.3919241,"sbp_gteq110_per_20_mmhg":0.3142295,"diabetes":0.8330787,"current_smoking":0.3438651,"bmi_lt30_per_5_kg_m2":0.0594874,"bmi_gt30_per_5_kg_m2":0.2525536,"egfr_lt60_per_15_ml":0.2981642,"egfr_gteq60_per_15_ml":0.0667159,"anti_hypertensive_use":0.333921,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0893177,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0974299,"age_per_10yr_x_diabetes":-0.404855,"age_per_10yr_x_current_smoking":-0.1982991,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0035619,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1564215,"const":-2.205379},"men_hf":{"age_per_10_years":0.5681541,"age_per_10_years_squared":-0.1048388,"sbp_lt110_per_20_mmhg":-0.4761564,"sbp_gteq110_per_20_mmhg":0.30324,"diabetes":0.6840338,"current_smoking":0.2656273,"bmi_lt30_per_5_kg_m2":0.0833107,"bmi_gt30_per_5_kg_m2":0.26999,"egfr_lt60_per_15_ml":0.2541805,"egfr_gteq60_per_15_ml":0.0638923,"anti_hypertensive_use":0.2583631,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0391938,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1269124,"age_per_10yr_x_diabetes":-0.3273572,"age_per_10yr_x_current_smoking":-0.2043019,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0182831,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1342618,"const":-1.95751}},"acr_30":{"women_cvd":{"age_per_10_years":0.5491768,"age_per_10_years_squared":-0.0937311,"non_hdl_c_per_1_mmol_l":0.0359847,"hdl_c_per_0.3_mmol_l":-0.1642965,"sbp_lt110_per_20_mmhg":-0.1483404,"sbp_gteq110_per_20_mmhg":0.313353,"diabetes":0.6253766,"current_smoking":0.3147172,"egfr_lt60_per_15_ml":0.1094663,"egfr_gteq60_per_15_ml":0.0550705,"anti_hypertensive_use":0.2782433,"statin_use":-0.0786239,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0628947,"treated_non_hdl_c":0.093204,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0710685,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0306363,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0951455,"age_per_10yr_x_diabetes":-0.3168231,"age_per_10yr_x_current_smoking":-0.1636391,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1265483,"ln_acr":0.1142251,"miss_ln_acr":-0.0055863,"const":-1.583738},"men_cvd":{"age_per_10_years":0.464491,"age_per_10_years_squared":-0.0998895,"non_hdl_c_per_1_mmol_l":0.0757606,"hdl_c_per_0.3_mmol_l":-0.1031778,"sbp_lt110_per_20_mmhg":-0.1990714,"sbp_gteq110_per_20_mmhg":0.2715816,"diabetes":0.4754637,"current_smoking":0.2069672,"egfr_lt60_per_15_ml":0.0331103,"egfr_gteq60_per_15_ml":0.0540474,"anti_hypertensive_use":0.2189911,"statin_use":-0.0331044,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.04534,"treated_non_hdl_c":0.1214535,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0483995,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0178997,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1059324,"age_per_10yr_x_diabetes":-0.2492861,"age_per_10yr_x_current_smoking":-0.1561543,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1012429,"ln_acr":0.1007571,"miss_ln_acr":0.0572456,"const":-1.398727},"women_ascvd":{"age_per_10_years":0.4629669,"age_per_10_years_squared":-0.0902777,"non_hdl_c_per_1_mmol_l":0.1215214,"hdl_c_per_0.3_mmol_l":-0.1522069,"sbp_lt110_per_20_mmhg":0.0092679,"sbp_gteq110_per_20_mmhg":0.3113609,"diabetes":0.581256,"current_smoking":0.263167,"egfr_lt60_per_15_ml":0.0391726,"egfr_gteq60_per_15_ml":0.0492959,"anti_hypertensive_use":0.1786178,"statin_use":0.0131058,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0325135,"treated_non_hdl_c":0.0617093,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0489189,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0321079,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1003185,"age_per_10yr_x_diabetes":-0.2684574,"age_per_10yr_x_current_smoking":-0.1547301,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1130703,"ln_acr":0.0903471,"miss_ln_acr":-0.0145818,"const":-2.178888},"men_ascvd":{"age_per_10_years":0.3995607,"age_per_10_years_squared":-0.094557,"non_hdl_c_per_1_mmol_l":0.1686692,"hdl_c_per_0.3_mmol_l":-0.1202145,"sbp_lt110_per_20_mmhg":-0.0555561,"sbp_gteq110_per_20_mmhg":0.2633566,"diabetes":0.4362036,"current_smoking":0.1716233,"egfr_lt60_per_15_ml":-0.0775282,"egfr_gteq60_per_15_ml":0.0561236,"anti_hypertensive_use":0.1319331,"statin_use":0.0102428,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0269294,"treated_non_hdl_c":0.0920557,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0297021,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0217935,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0893347,"age_per_10yr_x_diabetes":-0.2081467,"age_per_10yr_x_current_smoking":-0.1542716,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0597254,"ln_acr":0.0684872,"miss_ln_acr":0.0193962,"const":-1.873449},"women_hf":{"age_per_10_years":0.6319513,"age_per_10_years_squared":-0.1009284,"sbp_lt110_per_20_mmhg":-0.3787175,"sbp_gteq110_per_20_mmhg":0.2863393,"diabetes":0.7631221,"current_smoking":0.3355843,"bmi_lt30_per_5_kg_m2":0.0677084,"bmi_gt30_per_5_kg_m2":0.2517238,"egfr_lt60_per_15_ml":0.1940067,"egfr_gteq60_per_15_ml":0.0664006,"anti_hypertensive_use":0.3171436,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0970661,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0896239,"age_per_10yr_x_diabetes":-0.400743,"age_per_10yr_x_current_smoking":-0.2042041,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0054699,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.13602,"ln_acr":0.1486028,"miss_ln_acr":0.011608,"const":-2.538952},"men_hf":{"age_per_10_years":0.5750236,"age_per_10_years_squared":-0.1062268,"sbp_lt110_per_20_mmhg":-0.4633994,"sbp_gteq110_per_20_mmhg":0.2742874,"diabetes":0.612208,"current_smoking":0.2614987,"bmi_lt30_per_5_kg_m2":0.0895459,"bmi_gt30_per_5_kg_m2":0.2632424,"egfr_lt60_per_15_ml":0.1430472,"egfr_gteq60_per_15_ml":0.0535184,"anti_hypertensive_use":0.2417468,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0498574,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1193827,"age_per_10yr_x_diabetes":-0.316651,"age_per_10yr_x_current_smoking":-0.2046122,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0216878,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1165637,"ln_acr":0.1366452,"miss_ln_acr":0.1078355,"const":-2.314872}},"hba1c_30":{"women_cvd":{"age_per_10_years":0.5343493,"age_per_10_years_squared":-0.0952314,"non_hdl_c_per_1_mmol_l":0.0298124,"hdl_c_per_0.3_mmol_l":-0.1578451,"sbp_lt110_per_20_mmhg":-0.1504488,"sbp_gteq110_per_20_mmhg":0.3173368,"diabetes":0.4314738,"current_smoking":0.3209399,"egfr_lt60_per_15_ml":0.1771435,"egfr_gteq60_per_15_ml":0.0582828,"anti_hypertensive_use":0.2888947,"statin_use":-0.0795886,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0600438,"treated_non_hdl_c":0.0920598,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0696108,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0308807,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0954051,"age_per_10yr_x_diabetes":-0.2763408,"age_per_10yr_x_current_smoking":-0.1623944,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1430514,"hba1c_minus_5.3_x_diabetes":0.0940543,"hba1c_minus_5.3_x_1_minus_diabetes":0.1116486,"miss_hba1c":-0.0024798,"const":-1.341059},"men_cvd":{"age_per_10_years":0.4519873,"age_per_10_years_squared":-0.101624,"non_hdl_c_per_1_mmol_l":0.0700456,"hdl_c_per_0.3_mmol_l":-0.0968005,"sbp_lt110_per_20_mmhg":-0.1923527,"sbp_gteq110_per_20_mmhg":0.2827043,"diabetes":0.3417152,"current_smoking":0.2105272,"egfr_lt60_per_15_ml":0.1113291,"egfr_gteq60_per_15_ml":0.0640135,"anti_hypertensive_use":0.2334248,"statin_use":-0.0299421,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0393204,"treated_non_hdl_c":0.1228854,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0463737,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0184599,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1085744,"age_per_10yr_x_diabetes":-0.2208049,"age_per_10yr_x_current_smoking":-0.1577978,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1179375,"hba1c_minus_5.3_x_diabetes":0.0768169,"hba1c_minus_5.3_x_1_minus_diabetes":0.0777295,"miss_hba1c":0.0092204,"const":-1.180767},"women_ascvd":{"age_per_10_years":0.4555574,"age_per_10_years_squared":-0.0903501,"non_hdl_c_per_1_mmol_l":0.1148321,"hdl_c_per_0.3_mmol_l":-0.1458754,"sbp_lt110_per_20_mmhg":0.0089323,"sbp_gteq110_per_20_mmhg":0.3139029,"diabetes":0.386281,"current_smoking":0.2714309,"egfr_lt60_per_15_ml":0.0930987,"egfr_gteq60_per_15_ml":0.0532216,"anti_hypertensive_use":0.1862181,"statin_use":0.0106964,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0329713,"treated_non_hdl_c":0.0583609,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0463273,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0324717,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1004777,"age_per_10yr_x_diabetes":-0.2266944,"age_per_10yr_x_current_smoking":-0.1541859,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1286005,"hba1c_minus_5.3_x_diabetes":0.0875827,"hba1c_minus_5.3_x_1_minus_diabetes":0.1126417,"miss_hba1c":0.0124356,"const":-2.011533},"men_ascvd":{"age_per_10_years":0.3883267,"age_per_10_years_squared":-0.0958114,"non_hdl_c_per_1_mmol_l":0.1613374,"hdl_c_per_0.3_mmol_l":-0.1144418,"sbp_lt110_per_20_mmhg":-0.0474338,"sbp_gteq110_per_20_mmhg":0.2691281,"diabetes":0.2859773,"current_smoking":0.1759553,"egfr_lt60_per_15_ml":-0.0242898,"egfr_gteq60_per_15_ml":0.0644523,"anti_hypertensive_use":0.142874,"statin_use":0.0115062,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.02333,"treated_non_hdl_c":0.0899664,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0275478,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.022573,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.090802,"age_per_10yr_x_diabetes":-0.1771894,"age_per_10yr_x_current_smoking":-0.1548847,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0732754,"hba1c_minus_5.3_x_diabetes":0.0591089,"hba1c_minus_5.3_x_1_minus_diabetes":0.0821158,"miss_hba1c":0.0179755,"const":-1.777708},"women_hf":{"age_per_10_years":0.6210856,"age_per_10_years_squared":-0.1000972,"sbp_lt110_per_20_mmhg":-0.3773697,"sbp_gteq110_per_20_mmhg":0.295316,"diabetes":0.5681692,"current_smoking":0.3449139,"bmi_lt30_per_5_kg_m2":0.0540094,"bmi_gt30_per_5_kg_m2":0.249767,"egfr_lt60_per_15_ml":0.2875781,"egfr_gteq60_per_15_ml":0.0692013,"anti_hypertensive_use":0.3334936,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0922339,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0907885,"age_per_10yr_x_diabetes":-0.3554646,"age_per_10yr_x_current_smoking":-0.2008846,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0079611,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.156803,"hba1c_minus_5.3_x_diabetes":0.1448336,"hba1c_minus_5.3_x_1_minus_diabetes":0.1277838,"miss_hba1c":-0.0022589,"const":-2.193553},"men_hf":{"age_per_10_years":0.5703729,"age_per_10_years_squared":-0.1084544,"sbp_lt110_per_20_mmhg":-0.4471767,"sbp_gteq110_per_20_mmhg":0.2910152,"diabetes":0.4507242,"current_smoking":0.259585,"bmi_lt30_per_5_kg_m2":0.0850676,"bmi_gt30_per_5_kg_m2":0.2637222,"egfr_lt60_per_15_ml":0.2454706,"egfr_gteq60_per_15_ml":0.0675649,"anti_hypertensive_use":0.2611991,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0408908,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1241051,"age_per_10yr_x_diabetes":-0.2849461,"age_per_10yr_x_current_smoking":-0.2032308,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0239714,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.138301,"hba1c_minus_5.3_x_diabetes":0.1101184,"hba1c_minus_5.3_x_1_minus_diabetes":0.0949198,"miss_hba1c":0.0084192,"const":-1.974999}},"sdi_30":{"women_cvd":{"age_per_10_years":0.5124233,"age_per_10_years_squared":-0.0978159,"non_hdl_c_per_1_mmol_l":0.0322131,"hdl_c_per_0.3_mmol_l":-0.1717884,"sbp_lt110_per_20_mmhg":-0.1364536,"sbp_gteq110_per_20_mmhg":0.3074443,"diabetes":0.6709275,"current_smoking":0.2897728,"egfr_lt60_per_15_ml":0.1670658,"egfr_gteq60_per_15_ml":0.0618439,"anti_hypertensive_use":0.2969806,"statin_use":-0.0665514,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0458917,"treated_non_hdl_c":0.1168505,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0770419,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.027634,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0992045,"age_per_10yr_x_diabetes":-0.3208137,"age_per_10yr_x_current_smoking":-0.134847,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1399842,"sdi_decile_between_4_and_6":0.1129725,"sdi_decile_between_7_and_10":0.1975843,"miss_sdi":0.1627381,"const":-1.493211},"men_cvd":{"age_per_10_years":0.437377,"age_per_10_years_squared":-0.104443,"non_hdl_c_per_1_mmol_l":0.0812573,"hdl_c_per_0.3_mmol_l":-0.1069199,"sbp_lt110_per_20_mmhg":-0.2786727,"sbp_gteq110_per_20_mmhg":0.2729256,"diabetes":0.5279006,"current_smoking":0.1878949,"egfr_lt60_per_15_ml":0.0866569,"egfr_gteq60_per_15_ml":0.0594948,"anti_hypertensive_use":0.2028246,"statin_use":-0.0308404,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0283679,"treated_non_hdl_c":0.1439353,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0510854,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0150236,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1095448,"age_per_10yr_x_diabetes":-0.2561109,"age_per_10yr_x_current_smoking":-0.1282945,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1011023,"sdi_decile_between_4_and_6":0.0314626,"sdi_decile_between_7_and_10":0.2003953,"miss_sdi":0.0927451,"const":-1.251031},"women_ascvd":{"age_per_10_years":0.4396545,"age_per_10_years_squared":-0.0918489,"non_hdl_c_per_1_mmol_l":0.1132729,"hdl_c_per_0.3_mmol_l":-0.1544977,"sbp_lt110_per_20_mmhg":0.036315,"sbp_gteq110_per_20_mmhg":0.3049229,"diabetes":0.6344794,"current_smoking":0.234514,"egfr_lt60_per_15_ml":0.0898312,"egfr_gteq60_per_15_ml":0.0564502,"anti_hypertensive_use":0.1933487,"statin_use":0.0220467,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0229229,"treated_non_hdl_c":0.0903326,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0579383,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0274011,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1039749,"age_per_10yr_x_diabetes":-0.2785102,"age_per_10yr_x_current_smoking":-0.1167267,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1269382,"sdi_decile_between_4_and_6":0.1149139,"sdi_decile_between_7_and_10":0.1976537,"miss_sdi":0.1391241,"const":-2.116951},"men_ascvd":{"age_per_10_years":0.3749788,"age_per_10_years_squared":-0.0990063,"non_hdl_c_per_1_mmol_l":0.1708505,"hdl_c_per_0.3_mmol_l":-0.1272841,"sbp_lt110_per_20_mmhg":-0.1275555,"sbp_gteq110_per_20_mmhg":0.2659339,"diabetes":0.4676531,"current_smoking":0.1610104,"egfr_lt60_per_15_ml":-0.0465144,"egfr_gteq60_per_15_ml":0.0596996,"anti_hypertensive_use":0.1147096,"statin_use":0.0052906,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0186687,"treated_non_hdl_c":0.1063151,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0307797,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0218126,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0898242,"age_per_10yr_x_diabetes":-0.210054,"age_per_10yr_x_current_smoking":-0.1246327,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0629358,"sdi_decile_between_4_and_6":0.0199201,"sdi_decile_between_7_and_10":0.194949,"miss_sdi":0.0863835,"const":-1.836632},"women_hf":{"age_per_10_years":0.5919097,"age_per_10_years_squared":-0.1023133,"sbp_lt110_per_20_mmhg":-0.3864727,"sbp_gteq110_per_20_mmhg":0.301876,"diabetes":0.8162909,"current_smoking":0.3449647,"bmi_lt30_per_5_kg_m2":0.0574975,"bmi_gt30_per_5_kg_m2":0.2367826,"egfr_lt60_per_15_ml":0.2790347,"egfr_gteq60_per_15_ml":0.0742645,"anti_hypertensive_use":0.3352935,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0772532,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0995144,"age_per_10yr_x_diabetes":-0.4000423,"age_per_10yr_x_current_smoking":-0.1770335,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0083046,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.149585,"sdi_decile_between_4_and_6":0.0960646,"sdi_decile_between_7_and_10":0.1987543,"miss_sdi":0.1562214,"const":-2.317899},"men_hf":{"age_per_10_years":0.5387527,"age_per_10_years_squared":-0.1090333,"sbp_lt110_per_20_mmhg":-0.4829094,"sbp_gteq110_per_20_mmhg":0.2843569,"diabetes":0.6827667,"current_smoking":0.2406677,"bmi_lt30_per_5_kg_m2":0.0618028,"bmi_gt30_per_5_kg_m2":0.2705615,"egfr_lt60_per_15_ml":0.2255837,"egfr_gteq60_per_15_ml":0.0653632,"anti_hypertensive_use":0.2263243,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0316851,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1258716,"age_per_10yr_x_diabetes":-0.3243709,"age_per_10yr_x_current_smoking":-0.1596172,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0103092,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1204785,"sdi_decile_between_4_and_6":0.0680528,"sdi_decile_between_7_and_10":0.2619865,"miss_sdi":0.1151424,"const":-2.060187}},"full_30":{"women_cvd":{"age_per_10_years":0.5073749,"age_per_10_years_squared":-0.0981751,"non_hdl_c_per_1_mmol_l":0.0162303,"hdl_c_per_0.3_mmol_l":-0.1617147,"sbp_lt110_per_20_mmhg":-0.1111241,"sbp_gteq110_per_20_mmhg":0.282946,"diabetes":0.4004069,"current_smoking":0.2918701,"egfr_lt60_per_15_ml":0.1017102,"egfr_gteq60_per_15_ml":0.0622643,"anti_hypertensive_use":0.2872416,"statin_use":-0.0768135,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0557282,"treated_non_hdl_c":0.0917585,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0679131,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.029076,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0907755,"age_per_10yr_x_diabetes":-0.2702118,"age_per_10yr_x_current_smoking":-0.1373216,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1255864,"sdi_decile_between_4_and_6":0.1067741,"sdi_decile_between_7_and_10":0.1853138,"miss_sdi":0.1567115,"ln_acr":0.1028065,"miss_ln_acr":-0.0006181,"hba1c_minus_5.3_x_diabetes":0.0925285,"hba1c_minus_5.3_x_1_minus_diabetes":0.0975598,"miss_hba1c":0.0101713,"const":-1.748475},"men_cvd":{"age_per_10_years":0.4427595,"age_per_10_years_squared":-0.1064108,"non_hdl_c_per_1_mmol_l":0.0629381,"hdl_c_per_0.3_mmol_l":-0.1015427,"sbp_lt110_per_20_mmhg":-0.2542326,"sbp_gteq110_per_20_mmhg":0.2549679,"diabetes":0.333835,"current_smoking":0.1873833,"egfr_lt60_per_15_ml":0.0246102,"egfr_gteq60_per_15_ml":0.0552014,"anti_hypertensive_use":0.1979729,"statin_use":-0.0407714,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0365522,"treated_non_hdl_c":0.1232822,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0441334,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0177865,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1046657,"age_per_10yr_x_diabetes":-0.2116113,"age_per_10yr_x_current_smoking":-0.1277905,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0955922,"sdi_decile_between_4_and_6":0.0256704,"sdi_decile_between_7_and_10":0.1887637,"miss_sdi":0.089241,"ln_acr":0.0894596,"miss_ln_acr":0.0710124,"hba1c_minus_5.3_x_diabetes":0.0676202,"hba1c_minus_5.3_x_1_minus_diabetes":0.063409,"miss_hba1c":0.0038783,"const":-1.504558},"women_ascvd":{"age_per_10_years":0.4386739,"age_per_10_years_squared":-0.0921956,"non_hdl_c_per_1_mmol_l":0.0977728,"hdl_c_per_0.3_mmol_l":-0.1453525,"sbp_lt110_per_20_mmhg":0.0590925,"sbp_gteq110_per_20_mmhg":0.2862862,"diabetes":0.3669136,"current_smoking":0.2354695,"egfr_lt60_per_15_ml":0.0354338,"egfr_gteq60_per_15_ml":0.0573093,"anti_hypertensive_use":0.1840085,"statin_use":0.0117504,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0331945,"treated_non_hdl_c":0.0664311,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0492826,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0288888,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0964709,"age_per_10yr_x_diabetes":-0.2279648,"age_per_10yr_x_current_smoking":-0.120405,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1157635,"sdi_decile_between_4_and_6":0.1107632,"sdi_decile_between_7_and_10":0.1840367,"miss_sdi":0.1308962,"ln_acr":0.0810739,"miss_ln_acr":-0.0147785,"hba1c_minus_5.3_x_diabetes":0.0794709,"hba1c_minus_5.3_x_1_minus_diabetes":0.1002615,"miss_hba1c":0.017301,"const":-2.314066},"men_ascvd":{"age_per_10_years":0.3743566,"age_per_10_years_squared":-0.0995499,"non_hdl_c_per_1_mmol_l":0.1544808,"hdl_c_per_0.3_mmol_l":-0.1215297,"sbp_lt110_per_20_mmhg":-0.1083968,"sbp_gteq110_per_20_mmhg":0.2555179,"diabetes":0.2696998,"current_smoking":0.1628432,"egfr_lt60_per_15_ml":-0.077507,"egfr_gteq60_per_15_ml":0.0583407,"anti_hypertensive_use":0.1120322,"statin_use":-0.0025063,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0256116,"treated_non_hdl_c":0.0886745,"age_per_10yr_x_non_hdl_c_per_1_mmol_l":-0.0254507,"age_per_10yr_x_hdl_c_per_0.3_mml_l":0.0244639,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0869146,"age_per_10yr_x_diabetes":-0.165745,"age_per_10yr_x_current_smoking":-0.1244714,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.0624552,"sdi_decile_between_4_and_6":0.015675,"sdi_decile_between_7_and_10":0.1864231,"miss_sdi":0.0845697,"ln_acr":0.0560171,"miss_ln_acr":0.0252244,"hba1c_minus_5.3_x_diabetes":0.0501422,"hba1c_minus_5.3_x_1_minus_diabetes":0.0722905,"miss_hba1c":0.0114945,"const":-1.985368},"women_hf":{"age_per_10_years":0.5927507,"age_per_10_years_squared":-0.1028754,"sbp_lt110_per_20_mmhg":-0.3593781,"sbp_gteq110_per_20_mmhg":0.2628556,"diabetes":0.5113472,"current_smoking":0.347344,"bmi_lt30_per_5_kg_m2":0.0564656,"bmi_gt30_per_5_kg_m2":0.2363857,"egfr_lt60_per_15_ml":0.1971295,"egfr_gteq60_per_15_ml":0.0735227,"anti_hypertensive_use":0.3219386,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0880321,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.0863132,"age_per_10yr_x_diabetes":-0.3425359,"age_per_10yr_x_current_smoking":-0.181405,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":0.0031285,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1356989,"sdi_decile_between_4_and_6":0.0847634,"sdi_decile_between_7_and_10":0.18397,"miss_sdi":0.1485802,"ln_acr":0.1273306,"miss_ln_acr":0.0167008,"hba1c_minus_5.3_x_diabetes":0.1378342,"hba1c_minus_5.3_x_1_minus_diabetes":0.1138832,"miss_hba1c":0.0138979,"const":-2.642208},"men_hf":{"age_per_10_years":0.5478829,"age_per_10_years_squared":-0.1111928,"sbp_lt110_per_20_mmhg":-0.4547346,"sbp_gteq110_per_20_mmhg":0.2527602,"diabetes":0.4385384,"current_smoking":0.23979519999999999,"bmi_lt30_per_5_kg_m2":0.0640931,"bmi_gt30_per_5_kg_m2":0.2643081,"egfr_lt60_per_15_ml":0.1354588,"egfr_gteq60_per_15_ml":0.0570689,"anti_hypertensive_use":0.220666,"treated_sbp_gteq110_mm_hg_per_20_mm_hg":-0.0436769,"age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg":-0.1168376,"age_per_10yr_x_diabetes":-0.2730055,"age_per_10yr_x_current_smoking":-0.1573691,"age_per_10yr_x_bmi_gteq30_per_5_kg_m2":-0.0174998,"age_per_10yr_x_egfr_lt60_per_15_ml":-0.1128676,"sdi_decile_between_4_and_6":0.057746,"sdi_decile_between_7_and_10":0.2446441,"miss_sdi":0.1076782,"ln_acr":0.1233486,"miss_ln_acr":0.1274796,"hba1c_minus_5.3_x_diabetes":0.0985062,"hba1c_minus_5.3_x_1_minus_diabetes":0.0804844,"miss_hba1c":0.0022806,"const":-2.425439}}};
+// The AHA online calculator adds +0.0006181 for missing UACR here; the published table lists -0.0006181.
+COEFS.full_30.women_cvd.miss_ln_acr = 0.0006181;
+
+/* ---------- PREVENT math ---------- */
+function ckdEpi2021(scr, age, sex) {
+  const f = sex === 'female', k = f ? 0.7 : 0.9, a = f ? -0.241 : -0.302;
+  return 142 * Math.pow(Math.min(scr / k, 1), a) * Math.pow(Math.max(scr / k, 1), -1.2) * Math.pow(0.9938, age) * (f ? 1.012 : 1);
+}
+
+function pickModel(p) {
+  const has = { uacr: p.uacr != null, a1c: p.a1c != null, sdi: p.sdi != null };
+  const n = has.uacr + has.a1c + has.sdi;
+  if (n === 0) return { id: 'base', name: 'Base model', has };
+  if (n > 1) return { id: 'full', name: 'Full model (UACR, HbA1c and SDI terms)', has };
+  if (has.uacr) return { id: 'acr', name: 'Base model + UACR', has };
+  if (has.a1c) return { id: 'hba1c', name: 'Base model + HbA1c', has };
+  return { id: 'sdi', name: 'Base model + SDI', has };
+}
+
+function linearPredictor(set, key, p, model) {
+  const a = (p.age - 55) / 10;
+  const nh = (p.tc - p.hdl) * 0.02586 - 3.5;
+  const h = (p.hdl * 0.02586 - 1.3) / 0.3;
+  const s2 = (Math.max(p.sbp, 110) - 130) / 20;
+  const b2 = (Math.max(p.bmi, 30) - 30) / 5;
+  const e1 = (Math.min(p.egfr, 60) - 60) / -15;
+  const x = {
+    age_per_10_years: a,
+    age_per_10_years_squared: a * a,
+    non_hdl_c_per_1_mmol_l: nh,
+    'hdl_c_per_0.3_mmol_l': h,
+    sbp_lt110_per_20_mmhg: (Math.min(p.sbp, 110) - 110) / 20,
+    sbp_gteq110_per_20_mmhg: s2,
+    diabetes: p.dm,
+    current_smoking: p.smoker,
+    bmi_lt30_per_5_kg_m2: (Math.min(p.bmi, 30) - 25) / 5,
+    bmi_gt30_per_5_kg_m2: b2,
+    egfr_lt60_per_15_ml: e1,
+    egfr_gteq60_per_15_ml: (Math.max(p.egfr, 60) - 90) / -15,
+    anti_hypertensive_use: p.bpmed,
+    statin_use: p.statin,
+    treated_sbp_gteq110_mm_hg_per_20_mm_hg: s2 * p.bpmed,
+    treated_non_hdl_c: nh * p.statin,
+    age_per_10yr_x_non_hdl_c_per_1_mmol_l: a * nh,
+    'age_per_10yr_x_hdl_c_per_0.3_mml_l': a * h,
+    age_per_10yr_x_sbp_gteq110_mm_hg_per_20_mmhg: a * s2,
+    age_per_10yr_x_diabetes: a * p.dm,
+    age_per_10yr_x_current_smoking: a * p.smoker,
+    age_per_10yr_x_bmi_gteq30_per_5_kg_m2: a * b2,
+    age_per_10yr_x_egfr_lt60_per_15_ml: a * e1,
+    const: 1,
+    ln_acr: 0, 'hba1c_minus_5.3_x_diabetes': 0, 'hba1c_minus_5.3_x_1_minus_diabetes': 0,
+    sdi_decile_between_4_and_6: 0, sdi_decile_between_7_and_10: 0,
+    miss_ln_acr: 0, miss_hba1c: 0, miss_sdi: 0
+  };
+  const { has } = model;
+  if (has.uacr) x.ln_acr = Math.log(p.uacr > 0 ? p.uacr : 0.1);
+  if (has.a1c) {
+    x['hba1c_minus_5.3_x_diabetes'] = (p.a1c - 5.3) * p.dm;
+    x['hba1c_minus_5.3_x_1_minus_diabetes'] = (p.a1c - 5.3) * (1 - p.dm);
+  }
+  if (has.sdi) {
+    x.sdi_decile_between_4_and_6 = p.sdi >= 4 && p.sdi <= 6 ? 1 : 0;
+    x.sdi_decile_between_7_and_10 = p.sdi >= 7 ? 1 : 0;
+  }
+  if (model.id === 'full') {
+    x.miss_ln_acr = has.uacr ? 0 : 1;
+    x.miss_hba1c = has.a1c ? 0 : 1;
+    // AHA calculator quirk: for women's 10-yr ASCVD and HF it applies the missing-SDI term only when a ZIP was entered but had no SDI.
+    const skip = set === 'full_10' && (key === 'women_ascvd' || key === 'women_hf');
+    x.miss_sdi = has.sdi || skip ? 0 : 1;
+  }
+  const c = COEFS[set][key];
+  let z = 0;
+  for (const name in c) {
+    if (!(name in x)) throw new Error('Unmapped coefficient ' + name);
+    z += c[name] * x[name];
+  }
+  return z;
+}
+
+function computePrevent(p) {
+  const model = pickModel(p);
+  const sexKey = p.sex === 'female' ? 'women' : 'men';
+  const run = (yrs) => {
+    const set = model.id + '_' + yrs;
+    const out = {};
+    for (const o of ['cvd', 'ascvd', 'hf']) {
+      const z = linearPredictor(set, sexKey + '_' + o, p, model);
+      out[o] = Math.round(1000 * Math.exp(z) / (1 + Math.exp(z))) / 10;
+    }
+    return out;
+  };
+  return { model, r10: run(10), r30: p.age <= 59 ? run(30) : null };
+}
+window.__prevent = { computePrevent, ckdEpi2021 };
+
+/* ---------- Units and fields ---------- */
+const UNITS = {
+  chol: { mgdl: { label: 'mg/dL', to: v => v, from: v => v, dp: 0 }, mmol: { label: 'mmol/L', to: v => v / 0.02586, from: v => v * 0.02586, dp: 2 } },
+  creat: { mgdl: { to: v => v, from: v => v, dp: 2 }, umol: { to: v => v / 88.42, from: v => v * 88.42, dp: 0 } },
+  a1c: { pct: { label: '%', to: v => v, from: v => v, dp: 1 }, mmolmol: { label: 'mmol/mol', to: v => v / 10.929 + 2.15, from: v => (v - 2.15) * 10.929, dp: 0 } },
+  uacr: { mgg: { label: 'mg/g', to: v => v, from: v => v, dp: 1 }, mgmmol: { label: 'mg/mmol', to: v => v * 8.84, from: v => v / 8.84, dp: 2 } },
+  ht: { cm: { to: v => v, from: v => v, dp: 0 }, in: { to: v => v * 2.54, from: v => v / 2.54, dp: 1 } },
+  wt: { kg: { to: v => v, from: v => v, dp: 1 }, lb: { to: v => v * 0.45359237, from: v => v / 0.45359237, dp: 0 } }
+};
+// numeric field -> unit family (null = fixed unit)
+const NUM = { age: null, tc: 'chol', hdl: 'chol', sbp: null, bmi: null, ht: 'ht', wt: 'wt', egfr: null, creat: 'creat', uacr: 'uacr', a1c: 'a1c', sdi: null };
+const BOOL = ['sex', 'statin', 'bpmed', 'dm', 'smoker'];
+const LABEL = {
+  sex: 'Sex', age: 'Age', tc: 'Total cholesterol', hdl: 'HDL cholesterol', sbp: 'Systolic BP', bpmed: 'Blood pressure medicine',
+  statin: 'Statin', dm: 'Diabetes', smoker: 'Current smoker', bmi: 'BMI', ht: 'Height', wt: 'Weight', egfr: 'eGFR', creat: 'Creatinine',
+  uacr: 'UACR', a1c: 'HbA1c', sdi: 'SDI decile'
+};
+const RANGE = { age: [30, 79], tc: [130, 320], hdl: [20, 100], sbp: [90, 200], bmi: [18.5, 39.9], egfr: [15, 140] };
+const OPT_RANGE = { uacr: [0, 25000], a1c: [3, 15], sdi: [1, 10] };
+
+const blank = () => ({
+  v: {}, src: {}, conf: {}, note: {},
+  u: { chol: 'mgdl', creat: 'mgdl', a1c: 'pct', uacr: 'mgg', ht: 'cm', wt: 'kg' },
+  bmiMode: 'direct', egfrMode: 'direct', example: false
+});
+let S = blank();
+
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const fieldEl = k => $(`.field[data-k="${k}"]`) || (k === 'ht' || k === 'wt' ? $('.field[data-k="bmi"]') : k === 'creat' ? $('.field[data-k="egfr"]') : null);
+const fmt = (v, dp) => { const s = (+v).toFixed(dp); return dp ? s.replace(/\.?0+$/, '') : s; };
+
+function inputVal(k) {
+  const raw = S.v[k];
+  if (raw == null) return '';
+  const fam = NUM[k];
+  if (!fam) return String(raw);
+  const u = UNITS[fam][S.u[fam]];
+  return fmt(u.from(raw), u.dp);
+}
+
+function writeInputs(except) {
+  for (const k in NUM) {
+    const el = $('#f-' + k);
+    if (el && el !== except) el.value = inputVal(k);
+  }
+  for (const k of BOOL) {
+    const want = S.v[k] == null ? null : String(S.v[k] === true ? 1 : S.v[k] === false ? 0 : S.v[k]);
+    $$('#f-' + k + ' button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.val === want)));
+  }
+  $('#u-chol').value = S.u.chol; $('#u-creat').value = S.u.creat; $('#u-a1c').value = S.u.a1c;
+  $('#u-uacr').value = S.u.uacr; $('#u-ht').value = S.u.ht; $('#u-wt').value = S.u.wt;
+  $$('[data-unit="chol"]').forEach(e => e.textContent = UNITS.chol[S.u.chol].label);
+  const cr = S.u.chol === 'mmol' ? ['3.36–8.28 mmol/L', '0.52–2.59 mmol/L'] : ['130–320 mg/dL', '20–100 mg/dL'];
+  $('[data-range="tc"]').textContent = cr[0]; $('[data-range="hdl"]').textContent = cr[1];
+  $('[data-range="a1c"]').textContent = S.u.a1c === 'pct' ? '3–15 %' : '9–140 mmol/mol';
+  $('[data-range="uacr"]').textContent = S.u.uacr === 'mgg' ? '0–25,000 mg/g' : '0–2,828 mg/mmol';
+  $('#bmi-direct').hidden = S.bmiMode !== 'direct'; $('#bmi-calc').hidden = S.bmiMode === 'direct';
+  $('#bmi-toggle').textContent = S.bmiMode === 'direct' ? 'From height and weight' : 'Enter BMI directly';
+  $('#egfr-direct').hidden = S.egfrMode !== 'direct'; $('#egfr-calc').hidden = S.egfrMode === 'direct';
+  $('#egfr-toggle').textContent = S.egfrMode === 'direct' ? 'From creatinine' : 'Enter eGFR directly';
+  $('#example-banner').hidden = !S.example;
+}
+
+/* ---------- Effective inputs and checks ---------- */
+function effective() {
+  const v = S.v;
+  let bmi = v.bmi, egfr = v.egfr;
+  if (S.bmiMode === 'calc') bmi = v.ht > 0 && v.wt > 0 ? v.wt / Math.pow(v.ht / 100, 2) : null;
+  if (S.egfrMode === 'calc') egfr = v.creat > 0 && v.age > 0 && v.sex ? ckdEpi2021(v.creat, v.age, v.sex) : null;
+  return { ...v, bmi, egfr };
+}
+
+function evaluate() {
+  const e = effective(), clamp = $('#clamp').checked;
+  const missing = [], issues = [], fieldState = {};
+  const mark = (k, cls, msg) => { (fieldState[k] ||= { cls: new Set(), msgs: [] }).cls.add(cls); if (msg) fieldState[k].msgs.push(msg); };
+  const req = ['sex', 'age', 'tc', 'hdl', 'statin', 'sbp', 'bpmed', 'dm', 'smoker', 'bmi', 'egfr'];
+  for (const k of req) {
+    if (e[k] == null || e[k] === '') {
+      let label = LABEL[k];
+      if (k === 'bmi' && S.bmiMode === 'calc') label = 'Height and weight (for BMI)';
+      if (k === 'egfr' && S.egfrMode === 'calc') label = !S.v.creat ? 'Creatinine (for eGFR)' : 'Age and sex (for eGFR)';
+      missing.push({ k, label });
+      mark(k, 'missing');
+    }
+  }
+  const p = { ...e };
+  for (const k in RANGE) {
+    if (e[k] == null) continue;
+    const [lo, hi] = RANGE[k];
+    if (!isFinite(e[k])) { issues.push({ k, level: 'err', msg: `${LABEL[k]} is not a number` }); mark(k, 'bad', 'Not a number'); continue; }
+    if (e[k] < lo || e[k] > hi) {
+      const near = Math.min(hi, Math.max(lo, e[k]));
+      const shown = `${LABEL[k]} ${fmt(e[k], k === 'bmi' || k === 'egfr' ? 1 : 0)} is outside ${lo}–${hi}`;
+      if (clamp && k !== 'age') {
+        p[k] = near;
+        issues.push({ k, level: 'warn', msg: `${shown}; using ${near}` });
+        mark(k, 'check', `Outside ${lo}–${hi}; calculating with ${near}`);
+      } else {
+        issues.push({ k, level: 'err', msg: k === 'age' ? `${shown}. PREVENT is validated for ages 30–79 only.` : `${shown}. Correct it or tick "Use nearest in-range value".` });
+        mark(k, 'bad', `Must be ${lo}–${hi}`);
+      }
+    }
+  }
+  if (e.tc != null && e.hdl != null && e.hdl >= e.tc) { issues.push({ k: 'hdl', level: 'err', msg: 'HDL must be lower than total cholesterol' }); mark('hdl', 'bad', 'Higher than total cholesterol'); }
+  if (S.u.chol === 'mgdl' && e.tc != null && e.tc < 20) issues.push({ k: 'tc', level: 'warn', msg: 'Total cholesterol looks like mmol/L. Switch the cholesterol units.' });
+  if (S.egfrMode === 'calc' && S.u.creat === 'mgdl' && S.v.creat > 20) issues.push({ k: 'creat', level: 'warn', msg: 'Creatinine looks like µmol/L. Switch the creatinine units.' });
+  for (const k in OPT_RANGE) {
+    if (e[k] == null) continue;
+    const [lo, hi] = OPT_RANGE[k];
+    if (!isFinite(e[k]) || e[k] < lo || e[k] > hi || (k === 'sdi' && !Number.isInteger(e[k]))) {
+      issues.push({ k, level: 'err', msg: `${LABEL[k]} must be ${k === 'sdi' ? 'a whole number 1–10' : `${lo}–${hi.toLocaleString()} ${k === 'a1c' ? '%' : 'mg/g'}`}, or left blank` });
+      mark(k, 'bad', 'Out of range');
+    }
+  }
+  for (const k in S.conf) {
+    if (S.conf[k] === 'high' || S.v[k] == null) continue;
+    const src = S.src[k] === 'photo' ? 'photo' : 'text';
+    issues.push({ k, level: 'warn', msg: `Check ${LABEL[k]}: read from ${src} with ${S.conf[k]} confidence${S.note[k] ? ' (' + S.note[k] + ')' : ''}` });
+    mark(k, 'check', `Check this: ${S.conf[k]} confidence${S.note[k] ? '. ' + S.note[k] : ''}`);
+  }
+  for (const k in S.note) {
+    if (S.conf[k] && S.conf[k] !== 'high') continue;
+    if (S.v[k] == null && S.note[k]) { issues.push({ k, level: 'info', msg: S.note[k] }); mark(k, 'note', S.note[k]); }
+  }
+  if (e.age != null && e.age >= 60 && e.age <= 79) issues.push({ k: 'age', level: 'info', msg: '30-year risk is only estimated for ages 30–59' });
+  const blocking = issues.some(i => i.level === 'err');
+  const ready = !missing.length && !blocking;
+  let result = null;
+  if (ready) {
+    p.dm = p.dm ? 1 : 0; p.smoker = p.smoker ? 1 : 0; p.bpmed = p.bpmed ? 1 : 0; p.statin = p.statin ? 1 : 0;
+    result = computePrevent(p);
+  }
+  return { e, p, missing, issues, ready, result, fieldState };
+}
+
+/* ---------- Rendering ---------- */
+let last = null;
+function render(except) {
+  writeInputs(except);
+  const ev = evaluate();
+  last = ev;
+  // fields
+  $$('.field').forEach(f => { f.classList.remove('missing', 'bad', 'check', 'note'); $('.msg', f).textContent = ''; const c = $('.chip.src', f); if (c) c.remove(); });
+  for (const k in ev.fieldState) {
+    const f = fieldEl(k); if (!f) continue;
+    ev.fieldState[k].cls.forEach(c => f.classList.add(c));
+    $('.msg', f).textContent = ev.fieldState[k].msgs.join(' · ');
+  }
+  for (const k in S.src) {
+    if (S.v[k] == null) continue;
+    const f = fieldEl(k); if (!f || $('.chip.src', f)) continue;
+    const s = S.src[k];
+    const lab = { photo: 'From photo', text: 'From text', local: 'From text', example: 'Example', typed: null }[s];
+    if (!lab) continue;
+    const chip = document.createElement('span');
+    chip.className = 'chip src ' + (s === 'local' ? 'text' : s); chip.textContent = lab;
+    $('label, .lbl', f).appendChild(chip);
+  }
+  const e = ev.e;
+  $('#bmi-derived').innerHTML = S.bmiMode === 'calc' && e.bmi ? `BMI <b>${fmt(e.bmi, 1)}</b>` : '';
+  $('#egfr-derived').innerHTML = S.egfrMode === 'calc' && e.egfr ? `eGFR <b>${fmt(e.egfr, 0)}</b>` : '';
+
+  // status
+  const sum = $('#status-sum'), list = $('#status-list');
+  list.innerHTML = '';
+  const nMiss = ev.missing.length, nErr = ev.issues.filter(i => i.level === 'err').length;
+  if (ev.ready) { sum.className = 'status-sum ready'; sum.textContent = 'All required values entered'; }
+  else {
+    sum.className = 'status-sum notready';
+    const parts = [];
+    if (nMiss) parts.push(`${nMiss} value${nMiss > 1 ? 's' : ''} needed`);
+    if (nErr) parts.push(`${nErr} to fix`);
+    sum.textContent = parts.join(', ');
+  }
+  const add = (cls, text, k) => {
+    const li = document.createElement('li');
+    li.innerHTML = `<span class="dot ${cls}"></span>`;
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'linkish'; b.style.color = 'inherit'; b.style.fontSize = 'inherit'; b.textContent = text;
+    b.onclick = () => focusField(k);
+    li.appendChild(b); list.appendChild(li);
+  };
+  ev.missing.forEach(m => add('missing', m.label, m.k));
+  ev.issues.filter(i => i.level === 'err').forEach(i => add('err', i.msg, i.k));
+  ev.issues.filter(i => i.level === 'warn').forEach(i => add('warn', i.msg, i.k));
+  ev.issues.filter(i => i.level === 'info').forEach(i => add('info', i.msg, i.k));
+  if (!list.children.length) { const li = document.createElement('li'); li.style.color = 'var(--muted)'; li.textContent = 'Nothing to check.'; list.appendChild(li); }
+
+  renderResults(ev);
+  // After reading photos or text, say plainly what they did not contain
+  const capNeeded = $('#cap-needed');
+  capNeeded.hidden = $('#review').hidden || ev.ready;
+  capNeeded.innerHTML = capNeeded.hidden ? '' : neededHTML(ev, 'Not found in what you gave. Enter these in the form, or add another photo or more text and press "Fill the form" again.');
+  // phone bar
+  $('#mbar-text').innerHTML = ev.ready ? `10-yr ASCVD <b>${ev.result.r10.ascvd.toFixed(1)}%</b> · CVD <b>${ev.result.r10.cvd.toFixed(1)}%</b> · HF <b>${ev.result.r10.hf.toFixed(1)}%</b>` : (nMiss ? `<b>${nMiss} needed:</b> ${ev.missing.map(m => SHORT[m.k] || m.label).join(', ')}` : '') + (nMiss && nErr ? ' · ' : '') + (nErr ? `${nErr} to fix` : '');
+  $('#mbar-btn').textContent = ev.ready ? 'Results' : 'Show';
+  renderChecklist(ev);
+  renderFabNeed(ev);
+}
+
+/* Same status, shown inside the dictation card so it stays in view while talking */
+function renderFabNeed(ev) {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const box = $('#fab-need');
+  box.classList.toggle('ready', !!ev.ready);
+  if (ev.ready) {
+    const { r10, r30 } = ev.result;
+    const line = (lbl, k) => `<span>${lbl} <b>${r10[k].toFixed(1)}%</b>${r30 ? ` · 30y <b>${r30[k].toFixed(1)}%</b>` : ''}</span>`;
+    box.innerHTML = `<div class="h"><span>✓ Ready</span><button class="btn small" type="button" id="fab-copy-all">Copy all</button></div>
+      <div class="res">${line('ASCVD', 'ascvd')}${line('Total CVD', 'cvd')}${line('Heart failure', 'hf')}</div>`;
+    $('#fab-copy-all').onclick = async () => {
+      try { await navigator.clipboard.writeText(allRiskText()); setTalkStatus('Copied all three lines.'); }
+      catch { setTalkStatus('Copy was blocked here. Use Copy all under Estimated risk.', true); }
+    };
+    return;
+  }
+  const miss = new Set(ev.missing.map(m => m.k));
+  const bad = REQ.filter(k => !miss.has(k) && ev.fieldState[k] && ev.fieldState[k].cls.has('bad'));
+  const done = REQ.length - miss.size - bad.length;
+  const chips = ev.missing.map(m => `<button type="button" data-goto="${m.k}">${esc(SHORT[m.k] || m.label)}</button>`)
+    .concat(bad.map(k => `<button type="button" class="bad" data-goto="${k}">${esc(SHORT[k])} !</button>`));
+  const head = [miss.size ? `${miss.size} of 11 still needed` : '', bad.length ? `${bad.length} to fix` : ''].filter(Boolean).join(' · ') || 'Check the flagged values';
+  box.innerHTML = `<div class="h"><span>${head}</span><span>${done}/11</span></div><div class="trk"><i style="width:${done / REQ.length * 100}%"></i></div>${chips.length ? `<div class="chips">${chips.join('')}</div>` : ''}`;
+}
+
+/* Floating checklist of the required values, crossed off as they are entered */
+const REQ = ['sex', 'age', 'tc', 'hdl', 'statin', 'sbp', 'bpmed', 'dm', 'smoker', 'bmi', 'egfr'];
+const SHORT = { sex: 'Sex', age: 'Age', tc: 'Total cholesterol', hdl: 'HDL', statin: 'Statin', sbp: 'Systolic BP', bpmed: 'BP medicine', dm: 'Diabetes', smoker: 'Smoker', bmi: 'BMI', egfr: 'eGFR' };
+function renderChecklist(ev) {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const miss = new Set(ev.missing.map(m => m.k));
+  let done = 0;
+  const items = REQ.map(k => {
+    const bad = ev.fieldState[k] && ev.fieldState[k].cls.has('bad');
+    const state = miss.has(k) ? 'todo' : bad ? 'bad' : 'done';
+    if (state === 'done') done++;
+    const v = ev.e[k];
+    const val = state === 'todo' ? '' : `<span class="v">${esc(k === 'egfr' || k === 'bmi' ? fmt(v, k === 'bmi' ? 1 : 0) : showVal(k, v))}</span>`;
+    const icon = state === 'done' ? '✓' : state === 'bad' ? '!' : '';
+    const label = state === 'todo' ? (ev.missing.find(m => m.k === k).label.includes('(') ? ev.missing.find(m => m.k === k).label : SHORT[k]) : SHORT[k];
+    return `<li class="${state}"><button type="button" data-goto="${k}"><span class="box" aria-hidden="true">${icon}</span><span class="t">${esc(label)}</span>${val}<span class="sr">${state === 'done' ? ' (entered)' : state === 'bad' ? ' (needs fixing)' : ' (needed)'}</span></button></li>`;
+  });
+  const left = miss.size, fix = REQ.length - done - left;
+  const head = ev.ready ? 'Ready: all 11 entered' : [left ? `${left} of 11 still needed` : '', fix ? `${fix} to fix` : ''].filter(Boolean).join(', ') || 'Check the flagged values';
+  $('#ck-count').textContent = head;
+  $('#ck-pill').textContent = ev.ready ? '✓ Ready' : left ? `${left} needed` : `${fix} to fix`;
+  $('#checklist').classList.toggle('ready', ev.ready);
+  $('#ck-list').innerHTML = items.join('');
+  $('#ck-bar').style.width = (done / REQ.length * 100) + '%';
+}
+function setChecklistOpen(open) {
+  $('#checklist').classList.toggle('collapsed', !open);
+  $('#ck-toggle').setAttribute('aria-expanded', open ? 'true' : 'false');
+  try { localStorage.setItem('prevent-ck-open', open ? '1' : '0'); } catch {}
+}
+$('#ck-toggle').onclick = () => setChecklistOpen($('#checklist').classList.contains('collapsed'));
+{
+  let saved = null;
+  try { saved = localStorage.getItem('prevent-ck-open'); } catch {}
+  setChecklistOpen(saved != null ? saved === '1' : !matchMedia('(max-width: 900px)').matches);
+}
+
+// Three rings per horizon; each ring is drawn on a true 0–100% scale
+function rings(r, withUse) {
+  const C = 2 * Math.PI * 42;
+  const ring = (k, name, sub, use) => {
+    const v = r[k], arc = Math.max(0, Math.min(100, v)) / 100 * C;
+    return `<figure class="ring ${k}${k !== 'hf' ? ' key' : ''}">
+      <div class="dial"><svg viewBox="0 0 100 100" aria-hidden="true"><circle class="trk" cx="50" cy="50" r="42"/><circle class="arc" cx="50" cy="50" r="42" stroke-dasharray="${arc.toFixed(2)} ${C.toFixed(2)}" transform="rotate(-90 50 50)"/></svg>
+      <span class="pct">${v.toFixed(1)}<small>%</small></span></div>
+      <figcaption><b>${name}</b><span>${sub}</span>${use ? `<em>${use}</em>` : ''}</figcaption></figure>`;
+  };
+  // ASCVD drives the cholesterol guideline; total CVD drives the blood pressure guideline
+  return `<div class="rings">${ring('ascvd', 'ASCVD', 'heart attack, stroke', withUse && 'Statin decision')}${ring('cvd', 'Total CVD', 'ASCVD + heart failure', withUse && 'BP medicine decision')}${ring('hf', 'Heart failure', '')}</div>`;
+}
+// 100 people, with the total-CVD risk filled in
+function people(v, years) {
+  const n = Math.round(v);
+  const dots = Array.from({ length: 100 }, (_, i) => `<i${i < n ? ' class="on"' : ''}></i>`).join('');
+  const say = n < 1 ? 'Fewer than 1 in 100' : `About ${n} in 100`;
+  return `<div class="people"><div class="dots" role="img" aria-label="${say} people">${dots}</div>
+    <p><b>${say}</b> people with these values would be expected to have a heart attack, stroke or heart failure within ${years} years.</p></div>`;
+}
+
+const HINT = {
+  sex: 'Female or Male', age: 'In years; PREVENT covers 30–79',
+  tc: 'From a lipid panel, in mg/dL or mmol/L', hdl: 'From the same lipid panel',
+  statin: 'Yes or No', sbp: 'The top number of the blood pressure reading',
+  bpmed: 'Yes or No: any blood-pressure-lowering medicine', dm: 'Yes or No: a diagnosis of diabetes',
+  smoker: 'Yes or No: smoking now (former smokers are No)',
+  bmi: 'Enter BMI, or switch to height and weight', egfr: 'Enter eGFR, or switch to serum creatinine'
+};
+function neededHTML(ev, intro) {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const hint = k => (k === 'bmi' && S.bmiMode === 'calc') ? 'Height and weight, so BMI can be calculated'
+    : (k === 'egfr' && S.egfrMode === 'calc') ? (S.v.creat ? 'Age and sex are also needed to calculate eGFR' : 'Serum creatinine, so eGFR can be calculated') : HINT[k];
+  const errs = ev.issues.filter(i => i.level === 'err');
+  const n = ev.missing.length;
+  let html = `<div class="needed">`;
+  if (n) {
+    html += `<h3>Still needed: ${n} value${n > 1 ? 's' : ''}</h3><p>${esc(intro)}</p><ol>` +
+      ev.missing.map(m => `<li><button type="button" data-goto="${m.k}">${esc(m.label)}</button><span class="hint">${esc(hint(m.k) || '')}</span></li>`).join('') + `</ol>`;
+  }
+  if (errs.length) {
+    html += `<div class="${n ? 'fix' : ''}">${n ? '<h4>Also fix</h4>' : `<h3>Fix ${errs.length} value${errs.length > 1 ? 's' : ''}</h3><p>${esc(intro)}</p>`}<ol>` +
+      errs.map(i => `<li><button type="button" data-goto="${i.k}">${esc(i.msg)}</button></li>`).join('') + `</ol></div>`;
+  }
+  return html + `</div>`;
+}
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-goto]');
+  if (b) focusField(b.dataset.goto);
+});
+
+/* Recommendations: thresholds from the 2026 ACC/AHA dyslipidemia and 2025 AHA/ACC blood pressure guidelines */
+function cholCategory(v) { return v < 3 ? 'low' : v < 5 ? 'borderline' : v < 10 ? 'intermediate' : 'high'; }
+function bpRow(p, cvd) {
+  if (p.sbp >= 140) return 'bp-s2';
+  if (p.sbp >= 130) return cvd >= 7.5 || p.dm || p.egfr < 60 ? 'bp-s1-high' : 'bp-s1-low';
+  return p.sbp >= 120 ? 'bp-elevated' : 'bp-normal';
+}
+function renderRecs(ev) {
+  const box = $('#recs');
+  $$('#guide-panel tr[data-row]').forEach(tr => tr.classList.remove('here'));
+  if (!ev.ready) {
+    box.innerHTML = `<p class="res-empty">Recommendations appear once all required values are entered${ev.missing.length ? ` (${ev.missing.length} still needed)` : ''}.</p>`;
+    return;
+  }
+  const p = ev.p, { r10, r30 } = ev.result;
+  const cat = cholCategory(r10.ascvd), bp = bpRow(p, r10.cvd);
+  $(`#guide-panel tr[data-row="chol-${cat}"]`).classList.add('here');
+  // The stage table is for untreated blood pressure, so a treated patient gets no row
+  if (!p.bpmed) $(`#guide-panel tr[data-row="${bp}"]`).classList.add('here');
+  const nonHdl = p.tc - p.hdl;
+  const CAT = { low: 'Low', borderline: 'Borderline', intermediate: 'Intermediate', high: 'High' };
+  const goal = { borderline: [100, 130], intermediate: [100, 130], high: [70, 100] }[cat];
+  const chol = [];
+  if (cat === 'low') {
+    chol.push('Healthy lifestyle. A statin is not routinely recommended.');
+    if (r30 && r30.ascvd >= 10) chol.push(`30-year ASCVD risk is ${r30.ascvd.toFixed(1)}%: if LDL-C is 160–189 mg/dL, a statin may be considered.`);
+  }
+  if (cat === 'borderline') chol.push('A statin is reasonable after a shared discussion. A coronary calcium (CAC) score can help decide: CAC 0 may allow waiting, CAC above 0 favors a statin.');
+  if (cat === 'intermediate') chol.push('A statin is recommended after a shared discussion. A CAC score can refine the decision if it is uncertain.');
+  if (cat === 'high') chol.push('A statin is recommended, generally at higher intensity.');
+  const age4075 = p.age >= 40 && p.age <= 75;
+  if (p.dm && age4075) chol.push('Diabetes at age 40–75: at least a moderate-intensity statin is recommended whatever the calculated risk.');
+  else if (p.egfr >= 15 && p.egfr < 60 && age4075) chol.push(`eGFR ${fmt(p.egfr, 0)} (CKD stage 3–4) at age 40–75: at least a moderate-intensity statin is recommended whatever the calculated risk.`);
+  if (goal) chol.push(`Goals: LDL-C under ${goal[0]} and non-HDL-C under ${goal[1]} mg/dL. Non-HDL-C now: <b class="data ${nonHdl >= goal[1] ? 'over' : 'ok'}">${fmt(nonHdl, 0)} mg/dL</b>${nonHdl >= goal[1] ? ', above goal' : ', at goal'}.`);
+  if (p.statin) chol.push('Already on a statin: if not at goal, raise the intensity or add ezetimibe or a PCSK9 inhibitor.');
+  chol.push('Check lipoprotein(a) once if it has never been measured.');
+
+  const bpl = [];
+  const why = [r10.cvd >= 7.5 ? `10-year CVD risk ${r10.cvd.toFixed(1)}%` : '', p.dm ? 'diabetes' : '', p.egfr < 60 ? 'CKD' : ''].filter(Boolean).join(', ');
+  if (p.bpmed) {
+    bpl.push(`On blood pressure medicine. Goal under 130/80, with systolic under 120 encouraged when it can be reached safely.`);
+    bpl.push(p.sbp >= 130 ? `Systolic <b class="data over">${fmt(p.sbp, 0)}</b> is above goal: consider intensifying treatment.` : `Systolic <b class="data ok">${fmt(p.sbp, 0)}</b> is at goal.`);
+  } else if (bp === 'bp-s2') bpl.push(`Systolic ${fmt(p.sbp, 0)} is in the stage 2 range: medicine plus lifestyle changes at any risk; a single-pill combination of two medicines is preferred.`);
+  else if (bp === 'bp-s1-high') bpl.push(`Systolic ${fmt(p.sbp, 0)} is in the stage 1 range with ${why}: medicine plus lifestyle changes.`);
+  else if (bp === 'bp-s1-low') bpl.push(`Systolic ${fmt(p.sbp, 0)} is in the stage 1 range with 10-year CVD risk ${r10.cvd.toFixed(1)}% (under 7.5%): lifestyle changes for 3–6 months, then medicine if still 130/80 or higher.`);
+  else if (bp === 'bp-elevated') bpl.push(`Systolic ${fmt(p.sbp, 0)} is elevated: lifestyle changes.`);
+  else bpl.push(`Systolic ${fmt(p.sbp, 0)} is normal.`);
+  if (!p.bpmed && p.sbp < 140) bpl.push('Based on systolic only: a diastolic of 80–89 also counts as stage 1, and 90 or more as stage 2.');
+
+  const life = ['Heart-healthy eating pattern and at least 150 minutes a week of moderate activity.'];
+  if (p.smoker) life.unshift('<b>Current smoker:</b> advise quitting and offer counseling plus medicine (for example varenicline or nicotine replacement).');
+  if (p.bmi >= 25) life.push(`BMI ${fmt(p.bmi, 1)}: support weight loss through diet, activity and, where appropriate, medicine.`);
+  if (p.dm) life.push('Diabetes: consider an SGLT2 inhibitor or GLP-1 receptor agonist with proven cardiovascular benefit.');
+
+  const block = (title, tag, items) => `<div class="rec"><div class="rec-h"><h3>${title}</h3>${tag}</div><ul>${items.map(i => `<li>${i}</li>`).join('')}</ul></div>`;
+  box.innerHTML = `<div class="rec-grid">
+    ${block('Cholesterol', `<span class="tag ${cat}">${CAT[cat]} · ASCVD ${r10.ascvd.toFixed(1)}%</span>`, chol)}
+    ${block('Blood pressure', `<span class="tag ${r10.cvd >= 7.5 ? 'high' : 'low'}">CVD ${r10.cvd.toFixed(1)}% ${r10.cvd >= 7.5 ? '≥' : '<'} 7.5%</span>`, bpl)}
+    ${block('Lifestyle and other', '', life)}
+  </div>
+  <p class="g-src">A guide for discussion, not a substitute for clinical judgment. Assumes no known cardiovascular disease. See the general table below for the thresholds and sources.</p>`;
+}
+
+function renderResults(ev) {
+  renderRecs(ev);
+  const box = $('#results');
+  if (!ev.ready) {
+    const n = ev.missing.length;
+    box.innerHTML = neededHTML(ev, n ? `Results appear once ${n === 1 ? 'this is' : 'these are'} filled in. Click an item to go to it.` : 'Fix these to see results. Click an item to go to it.');
+    return;
+  }
+  const { r10, r30, model } = ev.result;
+  box.innerHTML = `
+    <div class="res-block"><div class="res-h"><h3>10-year risk</h3></div>${rings(r10, true)}${people(r10.cvd, 10)}</div>
+    <div class="res-block"><div class="res-h"><h3>30-year risk</h3></div>${r30 ? rings(r30) : '<div class="res-na">Not estimated for age 60 and over.</div>'}</div>
+    <div class="model">Model: <b>${model.name}</b>${S.egfrMode === 'calc' ? ' · eGFR from creatinine (CKD-EPI 2021)' : ''}${S.bmiMode === 'calc' ? ' · BMI from height and weight' : ''}</div>
+    <div class="res-actions"><button class="btn small" type="button" id="btn-recs">Recommendations ↓</button><button class="btn small primary" type="button" id="btn-copy-all" title="Copies three lines: ASCVD, total CVD and heart failure, each with 10 and 30 year risk">Copy all</button><button class="btn small" type="button" id="btn-copy-cvd" title="Copies: PREVENT total CVD 10 year X%, 30 year X%">Copy CVD</button><button class="btn small" type="button" id="btn-copy-ascvd" title="Copies: PREVENT ASCVD 10 year X%, 30 year X%">Copy ASCVD</button><button class="btn small" type="button" id="btn-copy-hf" title="Copies: PREVENT heart failure 10 year X%, 30 year X%">Copy HF</button><button class="btn small" type="button" id="btn-copy">Copy summary</button><span class="copied" id="copied" role="status"></span></div>
+    <pre class="summary" id="summary" hidden></pre>`;
+  $('#btn-copy').onclick = () => copyText(summaryText());
+  $('#btn-copy-ascvd').onclick = () => copyText(riskText('ascvd', 'ASCVD'));
+  $('#btn-copy-cvd').onclick = () => copyText(riskText('cvd', 'total CVD'));
+  $('#btn-copy-hf').onclick = () => copyText(riskText('hf', 'heart failure'));
+  $('#btn-copy-all').onclick = () => copyText(allRiskText());
+  $('#btn-recs').onclick = () => $('#recs-panel').scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'start' });
+}
+
+function summaryText() {
+  const { p, result } = last; const { r10, r30, model } = result;
+  const yn = b => (b ? 'yes' : 'no');
+  const lines = [
+    `PREVENT (AHA) – ${model.name}`,
+    `10-yr: total CVD ${r10.cvd.toFixed(1)}%, ASCVD ${r10.ascvd.toFixed(1)}%, HF ${r10.hf.toFixed(1)}%`,
+    r30 ? `30-yr: total CVD ${r30.cvd.toFixed(1)}%, ASCVD ${r30.ascvd.toFixed(1)}%, HF ${r30.hf.toFixed(1)}%` : '30-yr: not estimated (age 60+)',
+    `Inputs: ${p.age} y ${p.sex}, TC ${fmt(p.tc, 0)} mg/dL, HDL ${fmt(p.hdl, 0)} mg/dL, SBP ${fmt(p.sbp, 0)}, BP meds ${yn(p.bpmed)}, statin ${yn(p.statin)}, diabetes ${yn(p.dm)}, current smoker ${yn(p.smoker)}, BMI ${fmt(p.bmi, 1)}, eGFR ${fmt(p.egfr, 0)}` +
+      (p.uacr != null ? `, UACR ${fmt(p.uacr, 1)} mg/g` : '') + (p.a1c != null ? `, HbA1c ${fmt(p.a1c, 1)}%` : '') + (p.sdi != null ? `, SDI decile ${p.sdi}` : '')
+  ];
+  return lines.join('\n');
+}
+function riskText(k, label) {
+  const { r10, r30 } = last.result;
+  return `PREVENT ${label} 10 year ${r10[k].toFixed(1)}%, 30 year ${r30 ? r30[k].toFixed(1) + '%' : 'not estimated (age 60+)'}`;
+}
+function allRiskText() {
+  return [riskText('ascvd', 'ASCVD'), riskText('cvd', 'total CVD'), riskText('hf', 'heart failure')].join('\n');
+}
+async function copyText(text) {
+  const pre = $('#summary');
+  pre.textContent = text;
+  try { await navigator.clipboard.writeText(text); $('#copied').textContent = 'Copied'; pre.hidden = true; }
+  catch { pre.hidden = false; $('#copied').textContent = 'Select the text below to copy'; const r = document.createRange(); r.selectNodeContents(pre); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+}
+
+function focusField(k) {
+  const f = fieldEl(k); if (!f) return;
+  f.scrollIntoView({ behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+  const target = $('input:not([hidden]):not([type=checkbox])', f.querySelector('.ctl:not([hidden])') || f) || $('.seg button', f);
+  target && target.focus({ preventScroll: true });
+  f.classList.remove('flash'); void f.offsetWidth; f.classList.add('flash');
+}
+
+/* ---------- Input wiring ---------- */
+function setNum(k, raw) {
+  const t = String(raw).trim().replace(/,/g, '');
+  if (t === '') { delete S.v[k]; }
+  else {
+    const n = parseFloat(t.replace(/^[<>~≈]\s*/, ''));
+    const fam = NUM[k];
+    S.v[k] = isNaN(n) ? NaN : fam ? UNITS[fam][S.u[fam]].to(n) : n;
+  }
+  S.src[k] = 'typed'; delete S.conf[k]; delete S.note[k];
+}
+for (const k in NUM) {
+  const el = $('#f-' + k); if (!el) continue;
+  el.addEventListener('input', () => { setNum(k, el.value); render(el); });
+  el.addEventListener('blur', () => render());
+}
+for (const k of BOOL) {
+  $$('#f-' + k + ' button').forEach(b => b.addEventListener('click', () => {
+    const val = k === 'sex' ? b.dataset.val : b.dataset.val === '1';
+    S.v[k] = S.v[k] === val ? undefined : val;
+    if (S.v[k] === undefined) delete S.v[k];
+    S.src[k] = 'typed'; delete S.conf[k]; delete S.note[k];
+    render();
+  }));
+}
+[['u-chol', 'chol'], ['u-creat', 'creat'], ['u-a1c', 'a1c'], ['u-uacr', 'uacr'], ['u-ht', 'ht'], ['u-wt', 'wt']].forEach(([id, fam]) =>
+  $('#' + id).addEventListener('change', e => { S.u[fam] = e.target.value; render(); }));
+$('#bmi-toggle').onclick = () => { S.bmiMode = S.bmiMode === 'direct' ? 'calc' : 'direct'; render(); };
+$('#egfr-toggle').onclick = () => { S.egfrMode = S.egfrMode === 'direct' ? 'calc' : 'direct'; render(); };
+$('#clamp').addEventListener('change', () => render());
+$('#form').addEventListener('submit', e => e.preventDefault());
+$('#mbar-btn').onclick = () => {
+  const target = last && last.ready ? $('#results-panel') : $('#status-panel');
+  target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+};
+
+function loadExample() {
+  S = blank();
+  Object.assign(S.v, { sex: 'female', age: 50, tc: 200, hdl: 45, statin: false, sbp: 160, bpmed: true, dm: true, smoker: false, bmi: 35, egfr: 90 });
+  for (const k in S.v) S.src[k] = 'example';
+  S.example = true;
+  clearCapture();
+  render();
+}
+function clearAll() {
+  const prev = structuredClone(S);
+  S = blank();
+  $('#clamp').checked = false;
+  clearCapture();
+  render();
+  // A big button is easy to hit by accident, so clearing can be undone
+  if (Object.keys(prev.v).length) {
+    talkUndo = prev;
+    setTalkOut('<div class="row"><b>Cleared the form.</b><button class="btn small undo-btn" type="button">Undo</button></div>');
+  }
+}
+$('#btn-example').onclick = loadExample;
+$('#btn-clear').onclick = clearAll;
+$('#btn-clear-2').onclick = clearAll;
+
+/* ---------- Capture: photos and text ---------- */
+let photos = [];
+let sample = null, canImages = false, ctl = null;
+
+function clearCapture() {
+  photos.forEach(p => URL.revokeObjectURL(p.url));
+  photos = []; $('#paste').value = ''; $('#review').hidden = true; $('#review').innerHTML = '';
+  $('#cap-status').textContent = ''; $('#cap-status').className = 'cap-status';
+  setTalkOut(''); setTalkStatus('');
+  drawThumbs();
+}
+function drawThumbs() {
+  const box = $('#thumbs'); box.innerHTML = '';
+  photos.forEach((p, i) => {
+    const d = document.createElement('div'); d.className = 'thumb';
+    d.innerHTML = `<img alt="Photo ${i + 1}" src="${p.url}"><button type="button" aria-label="Remove photo ${i + 1}">×</button>`;
+    $('button', d).onclick = () => { URL.revokeObjectURL(p.url); photos.splice(i, 1); drawThumbs(); };
+    box.appendChild(d);
+  });
+}
+function addFiles(list) {
+  const imgs = [...list].filter(f => /^image\//.test(f.type));
+  if (!imgs.length) return;
+  if (!canImages) { setCapStatus('Photo reading needs this page open in Claude. Paste the text instead.', true); return; }
+  for (const f of imgs) photos.push({ file: f, url: URL.createObjectURL(f) });
+  drawThumbs();
+  setCapStatus(`${photos.length} photo${photos.length > 1 ? 's' : ''} ready. Press "Fill the form".`);
+}
+function setCapStatus(t, err) { const s = $('#cap-status'); s.textContent = t; s.className = 'cap-status' + (err ? ' err' : ''); }
+
+$('#file').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+$('#cam').addEventListener('change', e => { addFiles(e.target.files); e.target.value = ''; });
+const drop = $('#drop');
+['dragenter', 'dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('over'); }));
+['dragleave', 'drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('over'); }));
+drop.addEventListener('drop', e => addFiles(e.dataTransfer.files));
+document.addEventListener('paste', e => {
+  const files = [...(e.clipboardData?.items || [])].filter(i => i.kind === 'file').map(i => i.getAsFile()).filter(Boolean);
+  if (files.length) { e.preventDefault(); addFiles(files); }
+});
+
+const FIELD_MAP = {
+  sex: 'sex', age: 'age', total_cholesterol_mg_dl: 'tc', hdl_mg_dl: 'hdl', sbp_mm_hg: 'sbp', bp_meds: 'bpmed', statin: 'statin',
+  diabetes: 'dm', current_smoker: 'smoker', bmi: 'bmi', height_cm: 'ht', weight_kg: 'wt', egfr: 'egfr', creatinine_mg_dl: 'creat',
+  uacr_mg_g: 'uacr', hba1c_percent: 'a1c', sdi_decile: 'sdi'
+};
+const KEY_OF = Object.fromEntries(Object.entries(FIELD_MAP).map(([a, b]) => [b, a]));
+
+function buildPrompt(text, nImages) {
+  const today = new Date().toISOString().slice(0, 10);
+  return `You are reading clinical source material to fill in the AHA PREVENT cardiovascular risk calculator. Today's date is ${today}.
+${nImages ? `There ${nImages > 1 ? `are ${nImages} attached images` : 'is 1 attached image'} (photos or screenshots of lab reports, vitals, medication lists or notes).` : ''}
+${text ? `Pasted text:\n"""\n${text.slice(0, 20000)}\n"""` : ''}
+
+Reply with only a JSON object of this shape:
+{"fields": {"<key>": {"value": <number|boolean|string>, "source": "<short quote or description of where you saw it>", "confidence": "high"|"medium"|"low", "note": "<optional, short>"}}, "notes": ["<short notes>"]}
+
+Allowed keys (include a key only when the material gives evidence for it):
+- sex: "female" or "male"
+- age: years (calculate from date of birth if that is what is shown)
+- total_cholesterol_mg_dl, hdl_mg_dl
+- sbp_mm_hg: systolic blood pressure
+- bp_meds: true if any blood-pressure-lowering medicine is currently taken (ACE inhibitor, ARB, calcium channel blocker, thiazide, beta blocker, MRA, alpha blocker, etc.)
+- statin: true if a statin is currently taken
+- diabetes: true if diabetes is diagnosed or a diabetes-only medicine (insulin, metformin for diabetes, sulfonylurea, etc.) is taken
+- current_smoker: true for current smoking; former smokers and never smokers are false
+- bmi, height_cm, weight_kg
+- egfr: numeric eGFR. If the report only says ">60" or similar, do not give egfr; give creatinine instead and put the text in notes.
+- creatinine_mg_dl: serum creatinine
+- uacr_mg_g: urine albumin-to-creatinine ratio
+- hba1c_percent
+
+Rules:
+- Convert units: cholesterol mmol/L x 38.67 = mg/dL; creatinine umol/L / 88.42 = mg/dL; HbA1c mmol/mol / 10.929 + 2.15 = %; UACR mg/mmol x 8.84 = mg/g; lb x 0.4536 = kg; inches x 2.54 = cm. Say in "note" when you converted.
+- When several dates are shown, use the most recent result and say so in note.
+- When several blood pressure readings from the same visit are shown, use their average and say so in note.
+- Do not guess. Leave a key out when there is no evidence. Set a boolean to false only when the material supports it (for example "never smoker", "no diabetes", or a complete current medication list with no statin, which gives statin false with medium confidence).
+- Use "low" or "medium" confidence when text is blurry, cut off, ambiguous, or inferred.
+- In "notes", mention anything that affects whether PREVENT applies: known cardiovascular disease (MI, stroke, PAD, heart failure, revascularization), end-stage kidney disease or dialysis, or age outside 30-79.`;
+}
+
+function applyExtraction(obj, srcKind) {
+  const rows = mergeFields(obj, srcKind);
+  const notes = Array.isArray(obj?.notes) ? obj.notes.filter(n => typeof n === 'string' && n.trim()).slice(0, 8) : [];
+  showReview(rows, notes, srcKind);
+  render();
+  return rows.length;
+}
+
+// Writes extracted fields into S; returns one row per value set
+function mergeFields(obj, srcKind) {
+  const fields = (obj && typeof obj === 'object' && obj.fields && typeof obj.fields === 'object') ? obj.fields : {};
+  const rows = [];
+  S.example = false;
+  for (const [key, item] of Object.entries(fields)) {
+    const k = FIELD_MAP[key];
+    if (!k || item == null) continue;
+    const it = typeof item === 'object' ? item : { value: item };
+    let val = it.value;
+    if (k === 'sex') { val = String(val).toLowerCase().startsWith('f') ? 'female' : String(val).toLowerCase().startsWith('m') ? 'male' : null; }
+    else if (['bpmed', 'statin', 'dm', 'smoker'].includes(k)) { val = val === true || /^(true|yes|y|1)$/i.test(String(val)) ? true : val === false || /^(false|no|n|0)$/i.test(String(val)) ? false : null; }
+    else { val = typeof val === 'number' ? val : parseFloat(String(val).replace(/[^\d.\-]/g, '')); if (!isFinite(val)) val = null; }
+    if (val == null) continue;
+    const conf = ['high', 'medium', 'low'].includes(it.confidence) ? it.confidence : 'medium';
+    S.v[k] = val; S.src[k] = srcKind; S.conf[k] = conf;
+    if (it.note) S.note[k] = String(it.note).slice(0, 160); else delete S.note[k];
+    rows.push({ k, val, conf, source: it.source || '', note: it.note || '' });
+  }
+  // Prefer the derived routes when the direct value is absent
+  if (S.v.bmi == null && S.v.ht != null && S.v.wt != null) S.bmiMode = 'calc';
+  if (S.v.egfr == null && S.v.creat != null) S.egfrMode = 'calc';
+  // canonical units after extraction
+  if (rows.some(r => r.k === 'tc' || r.k === 'hdl')) S.u.chol = 'mgdl';
+  if (rows.some(r => r.k === 'creat')) S.u.creat = 'mgdl';
+  if (rows.some(r => r.k === 'a1c')) S.u.a1c = 'pct';
+  if (rows.some(r => r.k === 'uacr')) S.u.uacr = 'mgg';
+  if (rows.some(r => r.k === 'ht')) S.u.ht = 'cm';
+  if (rows.some(r => r.k === 'wt')) S.u.wt = 'kg';
+  return rows;
+}
+
+function showVal(k, v) {
+  if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+  if (k === 'sex') return v === 'female' ? 'Female' : 'Male';
+  const unit = { tc: ' mg/dL', hdl: ' mg/dL', sbp: ' mm Hg', ht: ' cm', wt: ' kg', creat: ' mg/dL', uacr: ' mg/g', a1c: ' %', age: ' y' }[k] || '';
+  return fmt(v, k === 'creat' ? 2 : 1) + unit;
+}
+function showReview(rows, notes, srcKind) {
+  const box = $('#review');
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  if (!rows.length && !notes.length) { box.hidden = false; box.innerHTML = '<h3>Nothing usable found</h3><p class="cap-note">Try a sharper photo, or paste the text.</p>'; return; }
+  box.hidden = false;
+  box.innerHTML = `<h3>Read ${rows.length} value${rows.length === 1 ? '' : 's'} from ${srcKind === 'photo' ? 'the photos' : srcKind === 'text' ? 'the text' : 'the text (on this device)'}</h3>
+    <div class="rv-wrap"><table class="rv-table"><thead><tr><th>Field</th><th>Value</th><th>Confidence</th><th>Where</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${LABEL[r.k]}</td><td class="data">${esc(showVal(r.k, r.val))}</td><td><span class="chip ${r.conf}">${r.conf}</span></td><td class="q">${esc(r.source)}${r.note ? ' — ' + esc(r.note) : ''}</td></tr>`).join('')}
+    </tbody></table></div>
+    ${notes.length ? `<ul class="rv-notes">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`;
+}
+
+/* Offline text parser: used when Claude is unavailable */
+const STATINS = /\b(atorvastatin|rosuvastatin|simvastatin|pravastatin|lovastatin|fluvastatin|pitavastatin|lipitor|crestor|zocor|pravachol|livalo|zypitamag|altoprev|ezallor|vytorin|caduet)\b/i;
+const BPMEDS = /\b(lisinopril|enalapril|ramipril|benazepril|quinapril|fosinopril|captopril|perindopril|trandolapril|moexipril|losartan|valsartan|irbesartan|olmesartan|telmisartan|candesartan|azilsartan|eprosartan|amlodipine|nifedipine|felodipine|isradipine|nicardipine|diltiazem|verapamil|hydrochlorothiazide|hctz|chlorthalidone|indapamide|metolazone|metoprolol|atenolol|carvedilol|bisoprolol|nebivolol|propranolol|labetalol|nadolol|spironolactone|eplerenone|clonidine|hydralazine|doxazosin|terazosin|prazosin|minoxidil|methyldopa|aliskiren|sacubitril|entresto|zestril|prinivil|vasotec|altace|lotensin|norvasc|cozaar|hyzaar|diovan|benicar|micardis|avapro|atacand|toprol|lopressor|coreg|tenormin|bystolic|aldactone|cardizem|procardia|exforge|azor|tribenzor|edarbi)\b/i;
+const DMMEDS = /\b(insulin|glargine|lispro|aspart|detemir|degludec|lantus|humalog|novolog|metformin|glipizide|glyburide|glimepiride|pioglitazone|sitagliptin|linagliptin|saxagliptin|alogliptin|januvia|semaglutide|ozempic|dulaglutide|trulicity|liraglutide|victoza|tirzepatide|mounjaro|exenatide)\b/i;
+
+function localParse(text) {
+  const F = {};
+  const put = (key, value, source, confidence = 'high', note) => { if (F[key] == null) F[key] = { value, source: source.trim().slice(0, 80), confidence, note }; };
+  const lines = text.split(/\r?\n|;/);
+  const num = s => { const m = s.match(/(\d+(?:\.\d+)?)/); return m ? parseFloat(m[1]) : null; };
+  const after = (line, re) => { const m = line.match(re); if (!m) return null; return num(line.slice(m.index + m[0].length)); };
+  let m;
+  if ((m = text.match(/\b(\d{2})\s*(?:yo|y\.?\s*o\.?|y\/o|-?\s*years?[- ]old|-?\s*year[- ]old|yr[- ]old)\b\s*(female|male|woman|man|lady|gentleman|f|m)?\b/i))) {
+    put('age', +m[1], m[0]);
+    if (m[2]) put('sex', /^(f|woman|lady)/i.test(m[2]) ? 'female' : 'male', m[0]);
+  }
+  if ((m = text.match(/\bage[:\s]+(\d{2})\b/i))) put('age', +m[1], m[0]);
+  if ((m = text.match(/\b(?:dob|date of birth|born)[:\s]+(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})/i))) {
+    let y = +m[3]; if (y < 100) y += y > 30 ? 1900 : 2000;
+    const dob = new Date(y, +m[1] - 1, +m[2]), now = new Date();
+    let age = now.getFullYear() - dob.getFullYear(); if (now < new Date(now.getFullYear(), dob.getMonth(), dob.getDate())) age--;
+    put('age', age, m[0], 'medium', 'Calculated from date of birth (read as month/day/year)');
+  }
+  if ((m = text.match(/\b(?:sex|gender)[:\s]+(female|male|f|m)\b/i))) put('sex', /^f/i.test(m[1]) ? 'female' : 'male', m[0]);
+  if (!F.sex && (m = text.match(/\b(female|male|woman|man)\b/i))) put('sex', /^(f|wo)/i.test(m[1]) ? 'female' : 'male', m[0], 'medium');
+  const bps = [...text.matchAll(/\b(?:bp|b\/p|blood pressure)?[:\s]*\b(\d{2,3})\s*\/\s*(\d{2,3})\b(?!\s*\/)/gi)].filter(x => +x[1] >= 70 && +x[1] <= 260 && +x[2] >= 30 && +x[2] <= 160 && +x[1] > +x[2]);
+  if (bps.length) {
+    const avg = bps.reduce((s, x) => s + +x[1], 0) / bps.length;
+    put('sbp_mm_hg', Math.round(avg), bps.map(x => x[0].trim()).join(', '), bps.length > 1 ? 'medium' : 'high', bps.length > 1 ? `Average of ${bps.length} readings` : undefined);
+  } else if ((m = text.match(/\b(?:sbp|systolic|blood pressure|bp)(?![ -]?(?:med|pill|drug|lowering))[^\d\n]{0,12}(\d{2,3})/i))) put('sbp_mm_hg', +m[1], m[0]);
+  // Lipids often share one line ("TC 212, HDL 41, LDL 140"), so match them directly first
+  const lipid = (re, key, lim) => {
+    const mm = text.match(re); if (!mm) return;
+    const n = parseFloat(mm[1]), conv = /mmol/i.test(mm[0]) || n < lim;
+    put(key, conv ? Math.round(n * 38.67) : n, mm[0], conv ? 'medium' : 'high', conv ? 'Converted from mmol/L' : undefined);
+  };
+  lipid(/(?<!non[-\s]?)\bHDL(?:[-\s]?C(?:holesterol)?)?\b\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(?:mmol\/l)?/i, 'hdl_mg_dl', 5);
+  lipid(/\b(?:total\s+cholesterol|cholesterol,?\s*total|total\s*chol\.?|TC)\b\s*[:=]?\s*(\d{1,3}(?:\.\d+)?)\s*(?:mmol\/l)?/i, 'total_cholesterol_mg_dl', 20);
+  for (const line of lines) {
+    const l = line.toLowerCase();
+    const mmol = /mmol\/l/.test(l);
+    if (/\bhdl\b/.test(l) && !/non[-\s]?hdl/.test(l) && !/ldl[^a-z]*\/\s*hdl|ratio/.test(l)) {
+      const n = after(line, /\bhdl\b(?:[-\s]?c(?:holesterol)?)?/i); if (n != null) put('hdl_mg_dl', mmol || n < 5 ? Math.round(n * 38.67) : n, line, mmol || n < 5 ? 'medium' : 'high', mmol || n < 5 ? 'Converted from mmol/L' : undefined);
+    } else if (/(total\s*chol|chol(?:esterol)?,?\s*total|\btc\b|cholesterol\b)/.test(l) && !/\b(ldl|vldl|non[-\s]?hdl|hdl|ratio)\b/.test(l)) {
+      const n = after(line, /(total\s*cholesterol|cholesterol,?\s*total|total\s*chol|\btc\b|cholesterol)/i); if (n != null) put('total_cholesterol_mg_dl', mmol || n < 20 ? Math.round(n * 38.67) : n, line, mmol || n < 20 ? 'medium' : 'high', mmol || n < 20 ? 'Converted from mmol/L' : undefined);
+    }
+    if (/\b(hb\s*a1c|hgb\s*a1c|hemoglobin a1c|a1c|glycated|glycosylated)\b/.test(l)) {
+      const n = after(line, /\b(hb\s*a1c|hgb\s*a1c|hemoglobin a1c|a1c|glycated haemoglobin|glycated hemoglobin|glycosylated hemoglobin)\b/i);
+      if (n != null) { const conv = n > 20 || /mmol\/mol/.test(l); put('hba1c_percent', conv ? +(n / 10.929 + 2.15).toFixed(1) : n, line, conv ? 'medium' : 'high', conv ? 'Converted from mmol/mol' : undefined); }
+    }
+    if (/(uacr|\bacr\b|albumin.{0,25}creat|microalb.{0,30}(ratio|creat))/.test(l)) {
+      const n = after(line, /(uacr|\bacr\b|albumin.{0,25}creat\w*(\s*ratio)?|microalb\w*.{0,30}(ratio|creat\w*))/i);
+      if (n != null) { const conv = /mg\/mmol/.test(l); put('uacr_mg_g', conv ? +(n * 8.84).toFixed(1) : n, line, conv ? 'medium' : 'high', conv ? 'Converted from mg/mmol' : undefined); }
+    } else if (/\bcreat(inine)?\b/.test(l) && !/(urine|clearance|kinase|ratio|\bck\b)/.test(l)) {
+      const n = after(line, /\bcreat(?:inine)?\b(?:,?\s*serum)?/i);
+      if (n != null) { const conv = /µmol|umol/.test(l) || n > 20; put('creatinine_mg_dl', conv ? +(n / 88.42).toFixed(2) : n, line, conv ? 'medium' : 'high', conv ? 'Converted from µmol/L' : undefined); }
+    }
+    if (/\begfr\b/.test(l)) {
+      const mm = line.match(/\begfr\b[^\d<>\n]{0,40}([<>]\s*)?(\d{1,3}(?:\.\d+)?)/i);
+      if (mm) { if (mm[1]) F._egfrNote = `Report shows eGFR ${mm[1].trim()}${mm[2]}`; else put('egfr', +mm[2], line); }
+    }
+    if (/\bbmi\b/.test(l)) { const n = after(line, /\bbmi\b/i); if (n != null) put('bmi', n, line); }
+    if (/\b(height|ht)\b/.test(l)) {
+      const ft = line.match(/(\d)\s*(?:'|ft|feet)\s*(\d{1,2}(?:\.\d+)?)?\s*(?:"|''|in)?/i);
+      if (ft) put('height_cm', Math.round((+ft[1] * 12 + (+ft[2] || 0)) * 2.54), line, 'medium', 'Converted from feet/inches');
+      else { const n = after(line, /\b(height|ht)\b/i); if (n != null) { const inch = /\b(in|inch|inches)\b|"/.test(l) || n < 90; put('height_cm', inch ? Math.round(n * 2.54) : n, line, inch ? 'medium' : 'high', inch ? 'Converted from inches' : undefined); } }
+    }
+    if (/\b(weight|wt)\b/.test(l)) {
+      const n = after(line, /\b(weight|wt)\b/i);
+      if (n != null) { const lb = /\b(lb|lbs|pounds)\b/.test(l); put('weight_kg', lb ? +(n * 0.45359237).toFixed(1) : n, line, lb ? 'high' : 'medium', lb ? 'Converted from lb' : 'Assumed kg'); }
+    }
+  }
+  // Negatives first, so "not a smoker" or "not on a statin" never reads as yes
+  const NOT = "(?:not|no|isn'?t|doesn'?t|don'?t|never)";
+  if ((m = text.match(/\b(never\s+smok\w*|non-?smoker|nonsmoker|former\s+smoker|ex-?smoker|quit\s+smoking|stopped\s+smoking|denies\s+(?:tobacco|smoking)|smoker:?\s*no|tobacco use:\s*(?:no|never|former))/i)) || (m = text.match(new RegExp(`\\b${NOT}\\s+(?:a\\s+)?(?:smoker|smoke|smoking)\\b`, 'i')))) put('current_smoker', false, m[0]);
+  else if ((m = text.match(/\b(current(?:ly)?\s+smok\w*|smokes\b|active smoker|is a smoker|a smoker\b|smoker:?\s*(?:yes|current)|\d+(?:\.\d+)?\s*(?:ppd|packs? per day)|tobacco use:\s*(?:yes|current))/i))) put('current_smoker', true, m[0]);
+  if ((m = text.match(/\b(no (?:history of )?diabetes|non-?diabetic|denies diabetes|diabetes:?\s*no)\b/i)) || (m = text.match(new RegExp(`\\b${NOT}\\s+(?:a\\s+|have\\s+)?(?:diabetic|diabetes)\\b`, 'i')))) put('diabetes', false, m[0]);
+  else if ((m = text.match(/\b(pre-?diabet\w*)/i)) && !/\b(type\s*(?:1|2|i|ii|one|two)\s*(?:diabetes|dm)|t[12]dm|dm2|dm\s*ii|diabetes mellitus)\b/i.test(text)) put('diabetes', false, m[0], 'medium', 'Prediabetes is not diabetes');
+  else if ((m = text.match(/\b(type\s*(?:1|2|i|ii|one|two)\s*(?:diabetes|dm)|t[12]dm|dm2|dm\s*ii|iddm|niddm|diabetes mellitus|diabetic|(?:has|with)\s+diabetes|diabetes:?\s*yes)\b/i))) put('diabetes', true, m[0]);
+  else if ((m = text.match(DMMEDS))) put('diabetes', true, m[0], 'medium', 'Inferred from a diabetes medicine');
+  if ((m = text.match(/\b(no statins?|statins?:?\s*no|(?:stopped|off)\s+(?:the\s+|her\s+|his\s+)?statins?)\b/i)) || (m = text.match(new RegExp(`\\b${NOT}\\s+(?:on\\s+|taking\\s+|take\\s+)?(?:a\\s+)?statins?\\b`, 'i')))) put('statin', false, m[0]);
+  else if ((m = text.match(STATINS))) put('statin', true, m[0]);
+  else if ((m = text.match(/\b((?:on|takes?|taking|started)\s+(?:a\s+)?statins?|statins?:?\s*yes)\b/i))) put('statin', true, m[0]);
+  const BPWORDS = '(?:bp|blood pressure|hypertension|antihypertensive)\\s*(?:med\\w*|pills?|drugs?|lowering)?';
+  if ((m = text.match(new RegExp(`\\b(?:no\\s+${BPWORDS}|${BPWORDS}:?\\s*no|${NOT}\\s+(?:on\\s+|taking\\s+|take\\s+)?(?:any\\s+)?${BPWORDS}|(?:stopped|off)\\s+(?:the\\s+|her\\s+|his\\s+)?${BPWORDS})\\b`, 'i'))) && /med|pill|drug|lowering|antihypertensive/i.test(m[0])) put('bp_meds', false, m[0]);
+  else if ((m = text.match(BPMEDS))) put('bp_meds', true, m[0], /metoprolol|atenolol|carvedilol|bisoprolol|propranolol|spironolactone|clonidine|doxazosin|terazosin|prazosin/i.test(m[0]) ? 'medium' : 'high', /metoprolol|atenolol|carvedilol|bisoprolol|propranolol|spironolactone|clonidine|doxazosin|terazosin|prazosin/i.test(m[0]) ? 'This medicine is sometimes used for other reasons' : undefined);
+  else if ((m = text.match(new RegExp(`\\b(?:(?:on|takes?|taking|started)\\s+(?:a\\s+)?${BPWORDS}|${BPWORDS}:?\\s*yes)\\b`, 'i'))) && /med|pill|drug|lowering|antihypertensive/i.test(m[0])) put('bp_meds', true, m[0]);
+  const notes = [];
+  if (F._egfrNote) { notes.push(F._egfrNote + (F.creatinine_mg_dl ? '. Calculated eGFR from creatinine instead.' : '. Enter creatinine to calculate an exact eGFR.')); delete F._egfrNote; }
+  return { fields: F, notes };
+}
+
+async function extract() {
+  const text = $('#paste').value.trim();
+  if (!text && !photos.length) { setCapStatus('Add a photo or paste some text first.', true); return; }
+  if (sample) {
+    const btn = $('#btn-extract'), stop = $('#btn-stop');
+    ctl = new AbortController();
+    btn.disabled = true; stop.hidden = false;
+    setCapStatus(photos.length ? `Reading ${photos.length} photo${photos.length > 1 ? 's' : ''}…` : 'Reading the text…');
+    try {
+      const opts = { signal: ctl.signal };
+      if (photos.length) opts.images = photos.map(p => p.file);
+      const obj = await sample.json(buildPrompt(text, photos.length), opts);
+      const n = applyExtraction(obj, photos.length ? 'photo' : 'text');
+      setCapStatus(n ? `Filled ${n} value${n > 1 ? 's' : ''}. Review them below and in the form.` : 'No values found.');
+    } catch (e) {
+      const code = e && e.code;
+      if (code === 'cancelled') setCapStatus('Stopped.');
+      else if (text && ['not_granted', 'sampling_disabled', 'capability_disabled', 'not_declared', 'capability_removed', 'rate_limited', 'upstream_error', 'invalid_json', 'refused', 'empty_completion'].includes(code)) {
+        const n = applyExtraction(localParse(text), 'local');
+        setCapStatus(`Claude could not read this (${code.replace(/_/g, ' ')}). Parsed the text on this device instead: ${n} value${n === 1 ? '' : 's'}.`, true);
+      } else if (code === 'image_rejected') setCapStatus('One of the photos could not be read. Try a different file.', true);
+      else if (code === 'rate_limited') setCapStatus('Too many requests right now. Try again in a minute.', true);
+      else setCapStatus('Could not read the photos' + (code ? ` (${code.replace(/_/g, ' ')})` : '') + '. Try again, or paste the text.', true);
+    } finally { btn.disabled = false; stop.hidden = true; ctl = null; }
+  } else {
+    if (photos.length && !text) { setCapStatus('Photo reading needs this page open in Claude. Paste the text instead.', true); return; }
+    const n = applyExtraction(localParse(text), 'local');
+    setCapStatus(`Parsed on this device: ${n} value${n === 1 ? '' : 's'}.`);
+  }
+}
+$('#btn-extract').onclick = extract;
+$('#btn-stop').onclick = () => ctl && ctl.abort();
+
+/* ---------- Say or type a change ---------- */
+const SPOKEN = [
+  [/\b(a\s*1\s*c|a one c|hb\s*a1c|hemoglobin a1c|glycated)\b/i, 'a1c'], [/\b(u\s*acr|acr|albumin|micro\s*albumin)\b/i, 'uacr'],
+  [/\b(sdi|deprivation)\b/i, 'sdi'], [/\begfr\b|\bgfr\b/i, 'egfr'], [/\bcreatinine\b/i, 'creat'], [/\bbmi\b/i, 'bmi'],
+  [/\bheight\b/i, 'ht'], [/\bweight\b/i, 'wt'], [/\bhdl\b/i, 'hdl'], [/\b(total cholesterol|tc|cholesterol)\b/i, 'tc'],
+  [/\b(bp|blood pressure)\s*(med\w*|pills?|drugs?)\b/i, 'bpmed'], [/\b(systolic|blood pressure|bp|sbp)\b/i, 'sbp'],
+  [/\bstatins?\b/i, 'statin'], [/\bsmok/i, 'smoker'], [/\bdiabet/i, 'dm'], [/\bage\b/i, 'age'], [/\b(sex|gender)\b/i, 'sex']
+];
+const CLEAR_RE = /\b(clear|remove|delete|erase|take out|get rid of|forget|blank|unknown|don'?t know|do not know|not available|no result for)\b/i;
+const RESET_RE = /\b(clear|reset|wipe|erase)\s+(?:it\s+)?(all|everything|the form)\b|\bstart (over|fresh)\b|\bnew patient\b/i;
+
+// Device-only reading of a spoken or typed change
+function localUpdate(text) {
+  const reset = RESET_RE.test(text);
+  const clear = new Set();
+  const keep = [];
+  for (const part of text.replace(RESET_RE, ' ').split(/(?<!\d)\.|\.(?!\d)|[;\n]|\bthen\b/i)) {
+    const verb = part.match(CLEAR_RE);
+    if (!verb) { keep.push(part); continue; }
+    keep.push(part.slice(0, verb.index));
+    // "remove the A1c and eGFR, HDL 52": bare names after the verb are cleared, anything with a number is a new value
+    for (const bit of part.slice(verb.index + verb[0].length).split(/,|\band\b/i)) {
+      if (/\d/.test(bit)) { keep.push(bit); continue; }
+      let rest = bit, hit;
+      do { hit = null; for (const [re, k] of SPOKEN) { if (re.test(rest)) { clear.add(k); rest = rest.replace(re, ' '); hit = k; break; } } } while (hit);
+    }
+  }
+  const parsed = localParse(keep.join('\n'));
+  return { fields: parsed.fields, clear: [...clear].map(k => KEY_OF[k]), reset, notes: parsed.notes };
+}
+
+function buildUpdatePrompt(text) {
+  const now = Object.keys(LABEL).map(k => `- ${KEY_OF[k]}: ${S.v[k] == null || (typeof S.v[k] === 'number' && !isFinite(S.v[k])) ? '(blank)' : JSON.stringify(S.v[k])}`).join('\n');
+  return `You update the inputs of the AHA PREVENT cardiovascular risk calculator from a short instruction that a clinician spoke or typed. Spoken text comes from speech recognition, so expect transcription slips: numbers spelled out ("one forty two" = 142), "a one c" = HbA1c, "HDL forty one" = HDL 41, "blood pressure one fifty over ninety" = systolic 150.
+
+Current values (mg/dL for cholesterol and creatinine, mm Hg, cm, kg, % for HbA1c, mg/g for UACR):
+${now}
+
+Instruction:
+"""
+${text.slice(0, 4000)}
+"""
+
+Reply with only a JSON object:
+{"reset": <true only if the instruction says to clear everything, start over, or that this is a new patient>, "fields": {"<key>": {"value": <number|boolean|string>, "source": "<the words from the instruction>", "confidence": "high"|"medium"|"low", "note": "<optional, short>"}}, "clear": ["<key to make blank>"], "notes": ["<short notes>"]}
+
+Keys: sex ("female"/"male"), age, total_cholesterol_mg_dl, hdl_mg_dl, sbp_mm_hg, bp_meds, statin, diabetes, current_smoker (booleans), bmi, height_cm, weight_kg, egfr, creatinine_mg_dl, uacr_mg_g, hba1c_percent, sdi_decile (whole number 1-10).
+
+Rules:
+- Include in "fields" only the values the instruction sets or changes. Leave everything else out.
+- Relative changes ("BP up 10", "two points lower") apply to the current value.
+- Put a key in "clear" when the instruction says to remove it, delete it, or that it is unknown.
+- Pronouns give sex ("she" = female, "he" = male) only when nothing else states it.
+- "Quit smoking" or "former smoker" means current_smoker false. Starting or stopping a medicine sets that boolean.
+- Convert units as needed: cholesterol mmol/L x 38.67; creatinine umol/L / 88.42; HbA1c mmol/mol / 10.929 + 2.15; UACR mg/mmol x 8.84; lb x 0.4536; inches x 2.54. Say so in "note".
+- Use "medium" or "low" confidence when the words are unclear. Do not guess values that were not said.
+- If the instruction asks for something the calculator does not hold (another lab, a diagnosis), say so briefly in "notes".`;
+}
+
+let talkUndo = null;
+const blankVal = v => v == null || (typeof v === 'number' && !isFinite(v));
+// The top bar and the floating card show the same status and result
+function setTalkStatus(t, err) { ['#talk-status', '#fab-status'].forEach(id => { const s = $(id); s.textContent = t; s.className = 'cap-status' + (err ? ' err' : ''); }); }
+function setTalkOut(html) { $('#talk-out').innerHTML = html; $('#fab-out').innerHTML = html; }
+
+function applyUpdate(obj, srcKind) {
+  const before = structuredClone(S);
+  const wasExample = S.example;
+  if (obj.reset === true) { S = blank(); clearCapture(); }
+  const rows = mergeFields(obj, srcKind);
+  const cleared = [];
+  for (const key of Array.isArray(obj.clear) ? obj.clear : []) {
+    const k = FIELD_MAP[key];
+    if (!k || rows.some(r => r.k === k) || blankVal(S.v[k])) continue;
+    delete S.v[k]; delete S.src[k]; delete S.conf[k]; delete S.note[k];
+    cleared.push(k);
+  }
+  if (cleared.length) S.example = false;
+  const changed = Object.keys(LABEL).filter(k => {
+    const a = before.v[k], b = S.v[k];
+    return blankVal(a) ? !blankVal(b) : blankVal(b) || a !== b;
+  });
+  if (!changed.length && !obj.reset) { S = before; S.example = wasExample; }
+  else talkUndo = before;
+  render();
+  showTalkResult(changed, before, obj, rows);
+  return changed.length;
+}
+
+function showTalkResult(changed, before, obj, rows) {
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  const notes = Array.isArray(obj?.notes) ? obj.notes.filter(n => typeof n === 'string' && n.trim()).slice(0, 4) : [];
+  if (!changed.length && !obj.reset) {
+    setTalkOut(`<div>Nothing changed.${rows.length ? ' Those values were already set.' : ' Try naming the value and the number, like “HDL 52”.'}</div>${notes.length ? `<ul>${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}`);
+    return;
+  }
+  // A new patient lists only what was set, not everything the reset blanked
+  const shown = obj.reset ? Object.keys(LABEL).filter(k => !blankVal(S.v[k])) : changed;
+  const items = shown.map(k => {
+    const a = obj.reset ? undefined : before.v[k], b = S.v[k];
+    const conf = S.conf[k] && S.conf[k] !== 'high' ? ` <span class="chip ${S.conf[k]}">check</span>` : '';
+    if (blankVal(b)) return `<li>${LABEL[k]}: cleared <span class="data">(was ${esc(showVal(k, a))})</span></li>`;
+    return `<li>${LABEL[k]}: ${blankVal(a) ? '' : `<span class="data">${esc(showVal(k, a))}</span> → `}<b class="data">${esc(showVal(k, b))}</b>${conf}</li>`;
+  });
+  const still = last && last.missing.length ? `<div class="still">Still needed: ${last.missing.map(m => `<button type="button" data-goto="${m.k}">${esc(m.label)}</button>`).join(', ')}</div>` : '';
+  const head = obj.reset ? `New patient${shown.length ? `: set ${shown.length} value${shown.length > 1 ? 's' : ''}` : ''}` : `Changed ${changed.length} value${changed.length > 1 ? 's' : ''}`;
+  setTalkOut(`<div class="row"><b>${head}</b><button class="btn small undo-btn" type="button">Undo</button></div>
+    ${items.length ? `<ul>${items.join('')}</ul>` : ''}
+    ${notes.length ? `<ul class="rv-notes">${notes.map(n => `<li>${esc(n)}</li>`).join('')}</ul>` : ''}${still}`);
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.undo-btn') || !talkUndo) return;
+  S = talkUndo; talkUndo = null;
+  render();
+  setTalkOut('<div>Undone. The form is back to how it was.</div>');
+  $('#toast').hidden = true;
+});
+
+// Floating Clear all, with a short-lived Undo toast since the top bar may be off screen
+let toastTimer = null;
+function toast(text) {
+  $('#toast-text').textContent = text;
+  $('#toast').hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { $('#toast').hidden = true; }, 8000);
+}
+$('#fab-clear').onclick = () => {
+  const had = Object.keys(S.v).length;
+  clearAll();
+  toast(had ? 'Form cleared' : 'The form is already empty');
+  $('#toast .undo-btn').hidden = !had;
+};
+
+let talkBusy = false;
+async function applyTalk(el = $('#talk')) {
+  const text = el.value.trim();
+  if (!text) { setTalkStatus('Say or type something first, like “BP 150”.', true); return; }
+  if (talkBusy) return;
+  talkBusy = true; $('#btn-talk').disabled = $('#fab-apply').disabled = true;
+  try {
+    let obj = null, fallback = '';
+    if (sample) {
+      setTalkStatus('Updating…');
+      try { obj = await sample.json(buildUpdatePrompt(text), { modelTier: 'quick' }); }
+      catch (e) { fallback = e && e.code ? e.code.replace(/_/g, ' ') : 'error'; }
+    }
+    if (!obj || typeof obj !== 'object') obj = localUpdate(text);
+    const n = applyUpdate(obj, 'text');
+    setTalkStatus(fallback ? `Claude could not read this (${fallback}), so it was read on this device.` : '', !!fallback);
+    if (n || obj.reset) el.value = '';
+  } finally { talkBusy = false; $('#btn-talk').disabled = $('#fab-apply').disabled = false; }
+}
+$('#btn-talk').onclick = () => applyTalk($('#talk'));
+$('#fab-apply').onclick = () => applyTalk($('#fab-talk'));
+['#talk', '#fab-talk'].forEach(id => $(id).addEventListener('keydown', e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); applyTalk(e.target); } }));
+
+// Dictation: the browser's speech recognition where it exists, otherwise the device's own dictation
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null, recQuiet = null;
+const DICTATE_HELP = 'Use your device’s dictation instead: click in the box, then press Windows key + H on Windows, press Fn twice (or the mic key) on a Mac, or tap the mic on a phone keyboard. Then press Apply.';
+function setMic(on) {
+  ['#btn-mic', '#fab-mic', '#fab-mic2'].forEach(id => {
+    const b = $(id);
+    b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    b.setAttribute('aria-label', on ? 'Stop listening' : 'Talk: dictate a change');
+  });
+  $('#fab-mic2 .mic-lbl').textContent = on ? 'Stop' : 'Talk';
+}
+// Ask for the microphone up front so the browser shows its Allow prompt; asked once per page load
+let micReady = false, micAsking = false;
+const MIC_BLOCKED = 'The browser blocked the microphone. To allow it, click the icon at the left end of the address bar (a lock or sliders), set Microphone to Allow, then reload the page. If there is no Microphone setting, this view can’t use the mic. ';
+async function askMic() {
+  if (micReady) return 'ok';
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) return 'ok'; // let speech recognition ask on its own
+  try {
+    const p = await navigator.permissions.query({ name: 'microphone' });
+    if (p.state === 'granted') { micReady = true; return 'ok'; }
+    if (p.state === 'denied') return 'blocked';
+  } catch {}
+  setTalkStatus('Your browser is asking to use the microphone. Click Allow.');
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    stream.getTracks().forEach(t => t.stop());
+    micReady = true;
+    return 'ok';
+  } catch (e) {
+    return e && e.name === 'NotFoundError' ? 'nomic' : 'blocked';
+  }
+}
+async function micStart(el = $('#talk')) {
+  if (!SR) { setTalkStatus('Voice input isn’t built into this browser. ' + DICTATE_HELP, true); el.focus(); return; }
+  if (micAsking) return;
+  micAsking = true;
+  const ok = await askMic().finally(() => { micAsking = false; });
+  if (ok === 'blocked') { setTalkStatus(MIC_BLOCKED + DICTATE_HELP, true); el.focus(); return; }
+  if (ok === 'nomic') { setTalkStatus('No microphone was found. ' + DICTATE_HELP, true); el.focus(); return; }
+  const base = el.value.trim();
+  let said = '', err = null;
+  rec = new SR();
+  rec.lang = navigator.language || 'en-US';
+  rec.continuous = true; rec.interimResults = true;
+  const quiet = ms => { clearTimeout(recQuiet); recQuiet = setTimeout(() => rec && rec.stop(), ms); };
+  rec.onresult = e => {
+    let interim = '';
+    for (let i = e.resultIndex; i < e.results.length; i++) {
+      if (e.results[i].isFinal) said += e.results[i][0].transcript + ' ';
+      else interim += e.results[i][0].transcript;
+    }
+    el.value = [base, (said + interim).trim()].filter(Boolean).join(' ');
+    quiet(2500);
+  };
+  rec.onerror = e => { err = e.error; };
+  rec.onend = () => {
+    clearTimeout(recQuiet); rec = null; setMic(false);
+    if (err === 'not-allowed' || err === 'service-not-allowed') { micReady = false; setTalkStatus(MIC_BLOCKED + DICTATE_HELP, true); }
+    else if (err === 'audio-capture') setTalkStatus('No microphone was found. ' + DICTATE_HELP, true);
+    else if (err === 'network') setTalkStatus('Speech recognition needs an internet connection. ' + DICTATE_HELP, true);
+    else if (said.trim()) applyTalk(el);
+    else setTalkStatus(err && err !== 'no-speech' && err !== 'aborted' ? `Voice input stopped (${err}). ` + DICTATE_HELP : 'Didn’t hear anything. Tap the mic and try again.', err && err !== 'no-speech' && err !== 'aborted');
+  };
+  try { rec.start(); } catch { rec = null; setTalkStatus('Voice input could not start here. ' + DICTATE_HELP, true); return; }
+  setMic(true);
+  setTalkStatus('Listening… say the values or changes. It applies when you pause.');
+  quiet(8000);
+}
+$('#btn-mic').onclick = () => { if (rec) rec.stop(); else micStart($('#talk')); };
+
+// Floating mic: opens a small card and starts listening; works from anywhere on the page
+function fabOpen(open) {
+  $('#fab-card').hidden = !open;
+  document.body.classList.toggle('fab-open', open);
+  if (open) fitKeyboard();
+  if (!open && rec) rec.stop();
+}
+// Keep the bottom sheet above the on-screen keyboard where the browser reports it
+function fitKeyboard() {
+  const vv = window.visualViewport; if (!vv) return;
+  const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+  document.documentElement.style.setProperty('--kb', kb + 'px');
+  document.documentElement.style.setProperty('--vvh', vv.height + 'px');
+}
+if (window.visualViewport) { visualViewport.addEventListener('resize', fitKeyboard); visualViewport.addEventListener('scroll', fitKeyboard); }
+$('#fab-mic2').onclick = () => { if (rec) rec.stop(); else micStart($('#fab-talk')); };
+// Tapping a needed item jumps to it; on phones, tuck the sheet away so the field is visible
+document.addEventListener('click', e => {
+  if (e.target.closest('#fab-need [data-goto]') && matchMedia('(max-width: 900px)').matches) fabOpen(false);
+});
+$('#fab-mic').onclick = () => {
+  if (rec) { rec.stop(); return; }
+  fabOpen(true);
+  micStart($('#fab-talk'));
+};
+$('#fab-close').onclick = () => { fabOpen(false); $('#fab-mic').focus(); };
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && !$('#fab-card').hidden) { fabOpen(false); $('#fab-mic').focus(); } });
+
+function setOffline() {
+  sample = null; canImages = false;
+  $('#drop-lead').textContent = 'Photo reading is available when this page is opened in Claude';
+  $('#drop-sub').textContent = 'Pasted text is parsed right here on your device.';
+  $('#photo-btns').hidden = true;
+  $('#cap-note').textContent = '';
+}
+(async () => {
+  setOffline();
+  try {
+    const s = window.claude && window.claude.use ? await window.claude.use('sample') : null;
+    if (!s) return;
+    sample = s;
+    const lim = await s.limits().catch(() => null);
+    canImages = !!(lim && lim.images);
+    if (canImages) {
+      $('#drop-lead').textContent = 'Drop photos here or paste a screenshot';
+      $('#drop-sub').textContent = 'Several pages at once is fine. Claude reads them and fills what it finds.';
+      $('#photo-btns').hidden = false;
+      $('#file').accept = lim.images.mediaTypes.join(',');
+    } else {
+      $('#drop-lead').textContent = 'Photo reading is not available in this view';
+      $('#drop-sub').textContent = 'Paste text instead; Claude will read it.';
+    }
+    $('#cap-note').textContent = 'Photos and text are sent to Claude on your account to be read. Nothing is saved by this page.';
+  } catch { setOffline(); }
+})();
+
+render();
+</script>
+
+</body></html>
