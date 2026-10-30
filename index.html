@@ -1,4 +1,4 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Cpath%20fill%3D%22%23C0191F%22%20d%3D%22M16%2029s-12.5-7.6-12.5-16.3C3.5%208%206.9%204.5%2011.2%204.5c2.3%200%203.9%201.1%204.8%202.6.9-1.5%202.5-2.6%204.8-2.6%204.3%200%207.7%203.5%207.7%208.2C28.5%2021.4%2016%2029%2016%2029z%22/%3E%3C/svg%3E"><link rel="apple-touch-icon" href="apple-touch-icon.png"><meta name="theme-color" content="#C0191F"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
 <title>PREVENT Risk Calculator</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -303,6 +303,9 @@ textarea#talk { flex: 1; min-width: 0; min-height: 52px; resize: vertical; borde
 .ck-list li.done .t { text-decoration: line-through; text-decoration-color: var(--muted); color: var(--muted); }
 .ck-list li.bad .box { background: var(--err); border-color: var(--err); color: var(--surface); }
 .ck-list li.bad .t { color: var(--err); font-weight: 600; }
+.ck-list li.ck-sep { margin: 8px 0 2px; padding: 6px 4px 0; border-top: 1px solid var(--line); font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ck-list li.opt .box { border-style: dashed; border-color: var(--muted); }
+.ck-list li.opt .t { color: var(--muted); }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 @media (max-width: 900px) {
   .checklist { bottom: calc(66px + env(safe-area-inset-bottom, 0px)); width: min(240px, calc(100vw - 108px)); max-height: calc(100vh - 140px); }
@@ -367,6 +370,8 @@ body:has(#fab-card:not([hidden])) .fab-clear { display: none; }
 .model b { color: var(--ink); font-weight: 600; }
 .res-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; align-items: center; }
 .copied { font-size: 12.5px; color: var(--ok); }
+textarea#pt-msg { width: 100%; min-height: 140px; resize: vertical; border: 1px solid var(--line); border-radius: var(--radius); background: var(--surface); padding: 12px 14px; font-size: 15px; line-height: 1.5; }
+.pt-stale { margin: 10px 0 0; font-size: 13px; color: var(--warn); background: var(--warn-soft); border-radius: 6px; padding: 8px 10px; }
 pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 12px; background: var(--sunken); border-radius: 6px; padding: 10px; margin: 10px 0 0; user-select: all; }
 
 .foot { margin-top: 22px; color: var(--muted); font-size: 12.5px; display: grid; gap: 6px; max-width: 90ch; }
@@ -574,6 +579,33 @@ pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 1
           </div>
         </div>
       </div>
+
+      <div class="group">
+        <div class="group-h"><h3>Other lipids</h3></div>
+        <p class="opt-intro">Not part of the PREVENT equations, so they do not change the risk numbers. They refine treatment and the patient message: see the Lipids card in the recommendations. Pick the Lp(a) unit shown on the report; nmol/L and mg/dL cannot be converted reliably.</p>
+        <div class="fields">
+          <div class="field" data-k="ldl">
+            <label for="f-ldl">LDL cholesterol</label>
+            <div class="ctl"><input id="f-ldl" inputmode="decimal"><span class="unit">mg/dL</span></div>
+            <div class="meta"><span>190 or more: statin at any risk</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="tg">
+            <label for="f-tg">Triglycerides</label>
+            <div class="ctl"><input id="f-tg" inputmode="decimal"><span class="unit">mg/dL</span></div>
+            <div class="meta"><span>High: 150 or more; severe: 500 or more</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="lpa">
+            <label for="f-lpa">Lipoprotein(a)</label>
+            <div class="ctl"><input id="f-lpa" inputmode="decimal"><select class="unit" id="u-lpa" aria-label="Lipoprotein(a) units"><option value="mgdl">mg/dL</option><option value="nmol">nmol/L</option></select></div>
+            <div class="meta"><span data-range="lpa">Elevated: 50 mg/dL or more</span></div><div class="msg"></div>
+          </div>
+          <div class="field" data-k="apob">
+            <label for="f-apob">Apolipoprotein B</label>
+            <div class="ctl"><input id="f-apob" inputmode="decimal"><select class="unit" id="u-apob" aria-label="ApoB units"><option value="mgdl">mg/dL</option><option value="gl">g/L</option></select></div>
+            <div class="meta"><span data-range="apob">Risk enhancer: 120 mg/dL or more</span></div><div class="msg"></div>
+          </div>
+        </div>
+      </div>
     </form>
 
     <aside class="readout" aria-label="Status and results">
@@ -596,6 +628,20 @@ pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 1
     <div class="panel-b" id="recs"></div>
   </section>
 
+  <section class="panel recs" id="msg-panel" aria-labelledby="msg-h">
+    <div class="panel-h"><h2 id="msg-h">Message to patient: cholesterol results</h2><span class="hint">One short paragraph. Edit here, then copy and paste.</span></div>
+    <div class="panel-b">
+      <textarea id="pt-msg" aria-labelledby="msg-h" placeholder="The message appears once all required values are entered."></textarea>
+      <div class="res-actions">
+        <button class="btn primary" type="button" id="pt-copy">Copy message</button>
+        <button class="btn" type="button" id="pt-reset">Rebuild from form</button>
+        <span class="copied" id="pt-copied" role="status"></span>
+      </div>
+      <p class="pt-stale" id="pt-noldl" hidden>LDL is not entered, so the message leaves it out. Enter LDL cholesterol (under Other lipids) to include it.</p>
+      <p class="pt-stale" id="pt-stale" hidden>The form changed after you edited this message. Press "Rebuild from form" to update it (your edits will be replaced).</p>
+    </div>
+  </section>
+
   <section class="panel guide" id="guide-panel" aria-labelledby="guide-h">
     <div class="panel-h"><h2 id="guide-h">General recommendations by risk</h2><span class="hint">The row that fits the current patient is highlighted</span></div>
     <div class="panel-b">
@@ -612,7 +658,8 @@ pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 1
       <ul class="g-notes">
         <li>At any calculated risk: LDL-C 190 mg/dL or higher calls for a high-intensity statin; diabetes or CKD stage 3–4 at ages 40–75 calls for at least a moderate-intensity statin.</li>
         <li>Not at goal on a statin: raise the intensity, or add ezetimibe or a PCSK9 inhibitor.</li>
-        <li>Measure lipoprotein(a) once in adulthood; 125 nmol/L or more marks higher risk.</li>
+        <li>Measure lipoprotein(a) once in adulthood. 125 nmol/L (50 mg/dL) or more is a risk-enhancing factor, about 1.4 times the long-term risk; 250 nmol/L (100 mg/dL) or more, about twice. When elevated: earlier and more intensive LDL-C lowering and control of other risk factors. No Lp(a)-lowering drug is approved yet.</li>
+        <li>ApoB 120 mg/dL or more is a risk-enhancing factor. ApoB goals track non-HDL-C: under 90 mg/dL below 10% risk, under 70 at 10% or more. Measuring it is most useful with diabetes, CKM syndrome, triglycerides 150–499 mg/dL, or once the LDL-C goal is met, to find leftover risk.</li>
       </ul>
       <h3>Blood pressure: by stage and 10-year PREVENT total CVD risk</h3>
       <div class="g-wrap"><table class="g-table">
@@ -776,22 +823,24 @@ const UNITS = {
   a1c: { pct: { label: '%', to: v => v, from: v => v, dp: 1 }, mmolmol: { label: 'mmol/mol', to: v => v / 10.929 + 2.15, from: v => (v - 2.15) * 10.929, dp: 0 } },
   uacr: { mgg: { label: 'mg/g', to: v => v, from: v => v, dp: 1 }, mgmmol: { label: 'mg/mmol', to: v => v * 8.84, from: v => v / 8.84, dp: 2 } },
   ht: { cm: { to: v => v, from: v => v, dp: 0 }, in: { to: v => v * 2.54, from: v => v / 2.54, dp: 1 } },
-  wt: { kg: { to: v => v, from: v => v, dp: 1 }, lb: { to: v => v * 0.45359237, from: v => v / 0.45359237, dp: 0 } }
+  wt: { kg: { to: v => v, from: v => v, dp: 1 }, lb: { to: v => v * 0.45359237, from: v => v / 0.45359237, dp: 0 } },
+  apob: { mgdl: { to: v => v, from: v => v, dp: 0 }, gl: { to: v => v * 100, from: v => v / 100, dp: 2 } }
 };
 // numeric field -> unit family (null = fixed unit)
-const NUM = { age: null, tc: 'chol', hdl: 'chol', sbp: null, bmi: null, ht: 'ht', wt: 'wt', egfr: null, creat: 'creat', uacr: 'uacr', a1c: 'a1c', sdi: null };
+const NUM = { age: null, tc: 'chol', hdl: 'chol', sbp: null, bmi: null, ht: 'ht', wt: 'wt', egfr: null, creat: 'creat', uacr: 'uacr', a1c: 'a1c', sdi: null, lpa: null, apob: 'apob', ldl: null, tg: null };
 const BOOL = ['sex', 'statin', 'bpmed', 'dm', 'smoker'];
 const LABEL = {
   sex: 'Sex', age: 'Age', tc: 'Total cholesterol', hdl: 'HDL cholesterol', sbp: 'Systolic BP', bpmed: 'Blood pressure medicine',
   statin: 'Statin', dm: 'Diabetes', smoker: 'Current smoker', bmi: 'BMI', ht: 'Height', wt: 'Weight', egfr: 'eGFR', creat: 'Creatinine',
-  uacr: 'UACR', a1c: 'HbA1c', sdi: 'SDI decile'
+  uacr: 'UACR', a1c: 'HbA1c', sdi: 'SDI decile', lpa: 'Lp(a)', apob: 'ApoB', ldl: 'LDL-C', tg: 'Triglycerides'
 };
 const RANGE = { age: [30, 79], tc: [130, 320], hdl: [20, 100], sbp: [90, 200], bmi: [18.5, 39.9], egfr: [15, 140] };
-const OPT_RANGE = { uacr: [0, 25000], a1c: [3, 15], sdi: [1, 10] };
+const OPT_RANGE = { uacr: [0, 25000], a1c: [3, 15], sdi: [1, 10], lpa: [0, 1000], apob: [10, 400], ldl: [10, 400], tg: [20, 5000] };
+const lpaUnit = () => S.u.lpa === 'mgdl' ? 'mg/dL' : 'nmol/L';
 
 const blank = () => ({
   v: {}, src: {}, conf: {}, note: {},
-  u: { chol: 'mgdl', creat: 'mgdl', a1c: 'pct', uacr: 'mgg', ht: 'cm', wt: 'kg' },
+  u: { chol: 'mgdl', creat: 'mgdl', a1c: 'pct', uacr: 'mgg', ht: 'cm', wt: 'kg', lpa: 'mgdl', apob: 'mgdl' },
   bmiMode: 'direct', egfrMode: 'direct', example: false
 });
 let S = blank();
@@ -826,6 +875,9 @@ function writeInputs(except) {
   $('[data-range="tc"]').textContent = cr[0]; $('[data-range="hdl"]').textContent = cr[1];
   $('[data-range="a1c"]').textContent = S.u.a1c === 'pct' ? '3–15 %' : '9–140 mmol/mol';
   $('[data-range="uacr"]').textContent = S.u.uacr === 'mgg' ? '0–25,000 mg/g' : '0–2,828 mg/mmol';
+  $('#u-lpa').value = S.u.lpa; $('#u-apob').value = S.u.apob;
+  $('[data-range="lpa"]').textContent = S.u.lpa === 'mgdl' ? 'Elevated: 50 mg/dL or more' : 'Elevated: 125 nmol/L or more';
+  $('[data-range="apob"]').textContent = S.u.apob === 'gl' ? 'Risk enhancer: 1.2 g/L or more' : 'Risk enhancer: 120 mg/dL or more';
   $('#bmi-direct').hidden = S.bmiMode !== 'direct'; $('#bmi-calc').hidden = S.bmiMode === 'direct';
   $('#bmi-toggle').textContent = S.bmiMode === 'direct' ? 'From height and weight' : 'Enter BMI directly';
   $('#egfr-direct').hidden = S.egfrMode !== 'direct'; $('#egfr-calc').hidden = S.egfrMode === 'direct';
@@ -881,7 +933,7 @@ function evaluate() {
     if (e[k] == null) continue;
     const [lo, hi] = OPT_RANGE[k];
     if (!isFinite(e[k]) || e[k] < lo || e[k] > hi || (k === 'sdi' && !Number.isInteger(e[k]))) {
-      issues.push({ k, level: 'err', msg: `${LABEL[k]} must be ${k === 'sdi' ? 'a whole number 1–10' : `${lo}–${hi.toLocaleString()} ${k === 'a1c' ? '%' : 'mg/g'}`}, or left blank` });
+      issues.push({ k, level: 'err', msg: `${LABEL[k]} must be ${k === 'sdi' ? 'a whole number 1–10' : `${lo}–${hi.toLocaleString()} ${{ a1c: '%', uacr: 'mg/g', lpa: lpaUnit(), apob: 'mg/dL', ldl: 'mg/dL', tg: 'mg/dL' }[k]}`}, or left blank` });
       mark(k, 'bad', 'Out of range');
     }
   }
@@ -1018,7 +1070,17 @@ function renderChecklist(ev) {
   $('#ck-count').textContent = head;
   $('#ck-pill').textContent = ev.ready ? '✓ Ready' : left ? `${left} needed` : `${fix} to fix`;
   $('#checklist').classList.toggle('ready', ev.ready);
-  $('#ck-list').innerHTML = items.join('');
+  // Optional values: listed after the required ones, not counted toward the 11
+  const OPT = ['ldl', 'tg', 'lpa', 'apob', 'a1c', 'uacr', 'sdi'];
+  const OSHORT = { ldl: 'LDL', tg: 'Triglycerides', lpa: 'Lp(a)', apob: 'ApoB', a1c: 'HbA1c', uacr: 'UACR', sdi: 'SDI decile' };
+  const optItems = OPT.map(k => {
+    const v = ev.e[k], has = v != null && v !== '';
+    const bad = ev.fieldState[k] && ev.fieldState[k].cls.has('bad');
+    const state = bad ? 'bad' : has ? 'done' : 'opt';
+    const val = has ? `<span class="v">${esc(isFinite(v) ? showVal(k, v) : '?')}</span>` : '';
+    return `<li class="${state}"><button type="button" data-goto="${k}"><span class="box" aria-hidden="true">${state === 'done' ? '✓' : state === 'bad' ? '!' : ''}</span><span class="t">${esc(OSHORT[k])}</span>${val}<span class="sr">${state === 'done' ? ' (entered)' : state === 'bad' ? ' (needs fixing)' : ' (optional)'}</span></button></li>`;
+  });
+  $('#ck-list').innerHTML = items.join('') + `<li class="ck-sep">Optional</li>` + optItems.join('');
   $('#ck-bar').style.width = (done / REQ.length * 100) + '%';
 }
 function setChecklistOpen(open) {
@@ -1027,6 +1089,8 @@ function setChecklistOpen(open) {
   try { localStorage.setItem('prevent-ck-open', open ? '1' : '0'); } catch {}
 }
 $('#ck-toggle').onclick = () => setChecklistOpen($('#checklist').classList.contains('collapsed'));
+// Keep focus where it is on press, so leaving a field does not redraw the list under the tap and swallow it
+['#ck-list', '#fab-need'].forEach(id => $(id).addEventListener('mousedown', e => { if (e.target.closest('[data-goto]')) e.preventDefault(); }));
 {
   let saved = null;
   try { saved = localStorage.getItem('prevent-ck-open'); } catch {}
@@ -1092,11 +1156,100 @@ function bpRow(p, cvd) {
   if (p.sbp >= 130) return cvd >= 7.5 || p.dm || p.egfr < 60 ? 'bp-s1-high' : 'bp-s1-low';
   return p.sbp >= 120 ? 'bp-elevated' : 'bp-normal';
 }
+/* Patient message about cholesterol results: plain language, ready to paste into a portal message */
+var ptAuto = '', ptDirty = false;
+function setPatientMsg(t) {
+  const ta = $('#pt-msg');
+  if (t == null) ptDirty = false; // no complete patient: never keep an old patient's edited text
+  ptAuto = t || '';
+  $('#pt-noldl').hidden = t == null || (last && last.p && last.p.ldl != null);
+  if (!ptDirty) ta.value = ptAuto;
+  $('#pt-stale').hidden = !(ptDirty && ta.value !== ptAuto);
+  $('#pt-copy').disabled = !ta.value.trim();
+}
+function buildPatientMsg(o) {
+  // Style follows the clinician's own sample messages: short, no numbers, plain words, one question at the end
+  const { p, cat, enh } = o;
+  const list = a => a.length < 3 ? a.join(' and ') : a.slice(0, -1).join(', ') + ', and ' + a[a.length - 1];
+  const age4075 = p.age >= 40 && p.age <= 75;
+  const dmInd = p.dm && age4075, ckdInd = !p.dm && p.egfr >= 15 && p.egfr < 60 && age4075;
+  const ldl190 = p.ldl != null && p.ldl >= 190;
+  const indicated = cat === 'intermediate' || cat === 'high' || dmInd || ckdInd || ldl190;
+  const goal = o.goal || (indicated ? [100, 130] : null);
+  const apobGoal = o.apobGoal || (goal ? (goal[0] === 70 ? 70 : 90) : null);
+  const nonHdl = p.tc - p.hdl;
+  const badHigh = p.ldl != null ? (goal ? p.ldl >= goal[0] : p.ldl >= 130) : (goal ? nonHdl >= goal[1] : nonHdl >= 160);
+  const lpaHi = enh.includes('Lp(a)');
+  const apobHi = p.apob != null && p.apob >= (apobGoal || 120);
+  const tgHi = p.tg != null && p.tg >= 150, tgSev = p.tg != null && p.tg >= 500;
+  const T = [];
+  // What came back high (LDL is named only when it was entered)
+  const hi = [];
+  if (badHigh && p.ldl != null) hi.push('LDL');
+  if (apobHi) hi.push('apoB');
+  if (lpaHi) hi.push('Lp(a)');
+  if (hi.length === 1) T.push(hi[0] === 'LDL' ? 'Your LDL (bad cholesterol) is high.' : `Your ${hi[0]} came back high.`);
+  else if (hi.length === 2) T.push(`Your ${list(hi)} both came back high.`);
+  else if (hi.length === 3) T.push(`Your ${list(hi)} all came back elevated.`);
+  if (tgSev) T.push('Your triglycerides are very high, which can inflame the pancreas.');
+  else if (tgHi) T.push('Your triglycerides are high.');
+  if (!hi.length && !tgHi && p.ldl != null) T.push('Your cholesterol results look good.');
+  if (lpaHi) T.push(`Lp(a) is a genetic risk factor that stays fairly constant over time and isn't significantly affected by diet or exercise. Because of this, your ${p.apob != null ? 'LDL and apoB need' : 'LDL needs'} to be controlled to lower targets than usual to offset the added risk.`);
+  else if (apobHi) T.push('ApoB is a more accurate marker of cardiovascular risk than LDL alone, and having more atherogenic particles circulating in your blood raises your risk for heart disease.');
+  else if (p.lpa != null) T.push('Your Lp(a), a genetic risk factor, is normal and does not need to be rechecked.');
+  // Risk
+  const strongEnh = enh.filter(e => e === 'Lp(a)' || e === 'apoB' || (e === 'LDL' && o.r30 && o.r30.ascvd >= 10));
+  if (cat === 'high') T.push('Your 10-year risk of heart attack or stroke is high enough to warrant a statin.');
+  else if (cat === 'intermediate') T.push('Your 10-year risk of heart attack or stroke is intermediate, which is high enough to warrant a statin.');
+  else if (cat === 'borderline') T.push('Your 10-year risk of heart attack or stroke is borderline.');
+  else if (!p.statin && !indicated && strongEnh.length) T.push(`Your calculated 10-year risk of heart attack or stroke is low, but that calculation does not account for your elevated ${list(strongEnh)}.`);
+  else T.push('Your 10-year risk of heart attack or stroke is low.');
+  if (cat !== 'high' && cat !== 'intermediate') {
+    if (ldl190) T.push('An LDL this high warrants a statin on its own.');
+    else if (dmInd) T.push('Because you have diabetes, a statin is still recommended.');
+    else if (ckdInd) T.push('Because of your kidney function, a statin is still recommended.');
+  }
+  if (p.smoker) T.push('Quitting smoking would also lower your risk.');
+  // Recommendation
+  const these = hi.length > 1 ? 'these' : hi.length ? 'it' : '';
+  const tgMed = tgSev ? " I'd also like to add a medicine to lower your triglycerides, such as fenofibrate." : '';
+  let ask = false;
+  if (!p.statin && (indicated || cat === 'borderline' || strongEnh.length)) {
+    T.push(`I recommend starting a statin${these ? ` to bring ${these} down` : ''} and following up in 3 months.`);
+    if (lpaHi) T.push("I'd also like to get a CT coronary calcium score to check for early plaque buildup given your elevated Lp(a).");
+    else if (!indicated) T.push('A CT coronary calcium score can also help decide.');
+    if (tgMed) T.push(tgMed.trim());
+    ask = true;
+  } else if (p.statin && goal && (badHigh || (p.apob != null && apobGoal && p.apob >= apobGoal))) {
+    T.push('Your cholesterol is still above goal on your statin, so I recommend increasing the dose and following up in 3 months.' + tgMed);
+    ask = true;
+  } else if (tgMed) {
+    T.push(tgMed.trim() + ' Cutting out alcohol and sugary foods also helps.');
+    ask = true;
+  } else {
+    if (p.statin) T.push('Please continue your statin.');
+    if (badHigh) T.push('Prioritize Mediterranean diet with olive oil, nuts, vegetables, and fatty fish. Limit saturated fats from full-fat dairy and red meat, trans fats from processed foods, and refined carbohydrates that can raise LDL levels.');
+    if (tgHi) T.push('To lower triglycerides, cut back on sugary drinks, sweets, refined carbohydrates like white bread, rice, and pasta, and alcohol; regular exercise and modest weight loss also help.');
+    if (!badHigh && !tgHi && !p.statin) T.push('Keep up a healthy diet and regular exercise.');
+  }
+  if (ask) T.push('Would you be willing to do this?');
+  // PREVENT scores two lines below the message
+  return T.join(' ') + '\n\n' + allRiskText();
+}
+$('#pt-msg').addEventListener('input', () => { ptDirty = true; $('#pt-copy').disabled = !$('#pt-msg').value.trim(); $('#pt-stale').hidden = $('#pt-msg').value === ptAuto; });
+$('#pt-reset').onclick = () => { ptDirty = false; setPatientMsg(ptAuto || null); $('#pt-copied').textContent = ''; };
+$('#pt-copy').onclick = async () => {
+  const ta = $('#pt-msg');
+  try { await navigator.clipboard.writeText(ta.value); $('#pt-copied').textContent = 'Copied'; }
+  catch { ta.focus(); ta.select(); $('#pt-copied').textContent = 'Press Ctrl+C (or Cmd+C) to copy the selected text'; }
+};
+
 function renderRecs(ev) {
   const box = $('#recs');
   $$('#guide-panel tr[data-row]').forEach(tr => tr.classList.remove('here'));
   if (!ev.ready) {
     box.innerHTML = `<p class="res-empty">Recommendations appear once all required values are entered${ev.missing.length ? ` (${ev.missing.length} still needed)` : ''}.</p>`;
+    setPatientMsg(null);
     return;
   }
   const p = ev.p, { r10, r30 } = ev.result;
@@ -1120,7 +1273,41 @@ function renderRecs(ev) {
   else if (p.egfr >= 15 && p.egfr < 60 && age4075) chol.push(`eGFR ${fmt(p.egfr, 0)} (CKD stage 3–4) at age 40–75: at least a moderate-intensity statin is recommended whatever the calculated risk.`);
   if (goal) chol.push(`Goals: LDL-C under ${goal[0]} and non-HDL-C under ${goal[1]} mg/dL. Non-HDL-C now: <b class="data ${nonHdl >= goal[1] ? 'over' : 'ok'}">${fmt(nonHdl, 0)} mg/dL</b>${nonHdl >= goal[1] ? ', above goal' : ', at goal'}.`);
   if (p.statin) chol.push('Already on a statin: if not at goal, raise the intensity or add ezetimibe or a PCSK9 inhibitor.');
-  chol.push('Check lipoprotein(a) once if it has never been measured.');
+
+  // Lp(a) and apoB: risk-enhancing factors and apoB goals (2026 ACC/AHA dyslipidemia guideline)
+  const lip = [], enh = [];
+  if (p.ldl != null) {
+    if (p.ldl >= 190) lip.push(`<b>LDL-C <span class="data over">${fmt(p.ldl, 0)} mg/dL</span> is 190 or more</b>: a high-intensity statin is recommended whatever the calculated risk. Consider familial hypercholesterolemia.`);
+    else if (p.ldl >= 160) { enh.push('LDL'); lip.push(`<b>LDL-C <span class="data over">${fmt(p.ldl, 0)} mg/dL</span></b>: 160–189 persistently is a risk-enhancing factor.`); }
+    if (goal) lip.push(`LDL-C goal at this risk level: under ${goal[0]} mg/dL. Now <b class="data ${p.ldl >= goal[0] ? 'over' : 'ok'}">${fmt(p.ldl, 0)} mg/dL</b>, ${p.ldl >= goal[0] ? 'above goal.' : 'at goal.'}`);
+  }
+  if (p.tg != null) {
+    if (p.tg >= 500) lip.push(`<b>Triglycerides <span class="data over">${fmt(p.tg, 0)} mg/dL</span>: severe</b> (500 or more). Lower them to prevent pancreatitis: a fibrate (or prescription omega-3), very low-fat diet, no alcohol, and treat secondary causes (glucose, thyroid, medicines).`);
+    else if (p.tg >= 150) { enh.push('triglycerides'); lip.push(`<b>Triglycerides <span class="data over">${fmt(p.tg, 0)} mg/dL</span>: high.</b> A risk-enhancing factor if persistent (150 or more fasting, 175 or more nonfasting). Address weight, alcohol, refined carbohydrates, glucose and secondary causes; apoB is worth measuring.`); }
+    else lip.push(`Triglycerides <span class="data ok">${fmt(p.tg, 0)} mg/dL</span>: normal.`);
+  }
+  const lpaCut = S.u.lpa === 'mgdl' ? [50, 100] : [125, 250];
+  if (p.lpa == null) lip.push('<b>Lp(a) not entered.</b> Measure it once in adulthood; 125 nmol/L (50 mg/dL) or more is a risk-enhancing factor.');
+  else if (p.lpa >= lpaCut[0]) {
+    enh.push('Lp(a)');
+    lip.push(`<b>Lp(a) <span class="data over">${fmt(p.lpa, 0)} ${lpaUnit()}</span> is elevated</b>, a risk-enhancing factor${p.lpa >= lpaCut[1] ? ' at a level linked to about twice the long-term ASCVD risk' : ' (about 1.4 times the long-term ASCVD risk)'}.`);
+    lip.push('Elevated Lp(a) calls for earlier and more intensive LDL-C lowering and tight control of blood pressure, glucose and smoking. No Lp(a)-lowering drug is approved yet; several are in phase 3 trials.');
+  } else lip.push(`Lp(a) <span class="data ok">${fmt(p.lpa, 0)} ${lpaUnit()}</span> is below the risk-enhancing threshold. It is mostly genetic, so repeating it is usually unnecessary.`);
+  const apobGoal = goal ? (cat === 'high' ? 70 : 90) : null;
+  if (p.apob == null) lip.push('<b>ApoB not entered.</b> Optional. Most useful with diabetes, CKM syndrome, triglycerides 150–499 mg/dL, or once the LDL-C goal is met, to find leftover risk. 120 mg/dL or more is a risk-enhancing factor.');
+  else {
+    if (p.apob >= 120) { enh.push('apoB'); lip.push(`<b>ApoB <span class="data over">${fmt(p.apob, 0)} mg/dL</span> is 120 or more</b>, a risk-enhancing factor.`); }
+    if (apobGoal) lip.push(`ApoB goal at this risk level: under ${apobGoal} mg/dL. Now <b class="data ${p.apob >= apobGoal ? 'over' : 'ok'}">${fmt(p.apob, 0)} mg/dL</b>, ${p.apob >= apobGoal ? (p.statin ? 'above goal: intensify therapy (higher statin intensity, then ezetimibe or a PCSK9 inhibitor), even if LDL-C looks at goal.' : 'above goal.') : 'at goal.'}`);
+    else if (p.apob < 120) lip.push(`ApoB <span class="data ok">${fmt(p.apob, 0)} mg/dL</span> is below the risk-enhancing threshold of 120.`);
+  }
+  if (enh.length) {
+    const what = enh.join(' and '), s = enh.length > 1 ? '' : 's';
+    if (cat === 'low') lip.push(`<b>What it changes:</b> calculated risk is low, so a statin is not routine, but elevated ${what} add${s} risk the equations do not capture. It can support a shared decision to start a statin${r30 ? `, especially with 30-year ASCVD risk of ${r30.ascvd.toFixed(1)}%` : ''}. A CAC score can help decide.`);
+    else if (cat === 'high') lip.push(`<b>What it changes:</b> a statin is already recommended at this risk. Elevated ${what} favor${s} higher intensity and adding a nonstatin if LDL-C stays above goal.`);
+    else lip.push(`<b>What it changes:</b> at ${CAT[cat].toLowerCase()} risk, elevated ${what} favor${s} ${p.statin ? 'staying on the statin and reaching goal, with higher intensity if needed' : 'starting a statin'}.`);
+  }
+  setPatientMsg(buildPatientMsg({ p, r10, r30, cat, goal, enh, apobGoal }));
+  const lipTag = (p.ldl >= 190 || p.tg >= 500) ? '<span class="tag high">Needs treatment</span>' : enh.length ? '<span class="tag intermediate">Risk enhancer</span>' : p.lpa == null && p.apob == null && p.ldl == null && p.tg == null ? '<span class="tag borderline">Not entered</span>' : '<span class="tag low">Not elevated</span>';
 
   const bpl = [];
   const why = [r10.cvd >= 7.5 ? `10-year CVD risk ${r10.cvd.toFixed(1)}%` : '', p.dm ? 'diabetes' : '', p.egfr < 60 ? 'CKD' : ''].filter(Boolean).join(', ');
@@ -1143,6 +1330,7 @@ function renderRecs(ev) {
   box.innerHTML = `<div class="rec-grid">
     ${block('Cholesterol', `<span class="tag ${cat}">${CAT[cat]} · ASCVD ${r10.ascvd.toFixed(1)}%</span>`, chol)}
     ${block('Blood pressure', `<span class="tag ${r10.cvd >= 7.5 ? 'high' : 'low'}">CVD ${r10.cvd.toFixed(1)}% ${r10.cvd >= 7.5 ? '≥' : '<'} 7.5%</span>`, bpl)}
+    ${block('Lipids: LDL, TG, Lp(a), apoB', lipTag, lip)}
     ${block('Lifestyle and other', '', life)}
   </div>
   <p class="g-src">A guide for discussion, not a substitute for clinical judgment. Assumes no known cardiovascular disease. See the general table below for the thresholds and sources.</p>`;
@@ -1179,7 +1367,7 @@ function summaryText() {
     `10-yr: total CVD ${r10.cvd.toFixed(1)}%, ASCVD ${r10.ascvd.toFixed(1)}%, HF ${r10.hf.toFixed(1)}%`,
     r30 ? `30-yr: total CVD ${r30.cvd.toFixed(1)}%, ASCVD ${r30.ascvd.toFixed(1)}%, HF ${r30.hf.toFixed(1)}%` : '30-yr: not estimated (age 60+)',
     `Inputs: ${p.age} y ${p.sex}, TC ${fmt(p.tc, 0)} mg/dL, HDL ${fmt(p.hdl, 0)} mg/dL, SBP ${fmt(p.sbp, 0)}, BP meds ${yn(p.bpmed)}, statin ${yn(p.statin)}, diabetes ${yn(p.dm)}, current smoker ${yn(p.smoker)}, BMI ${fmt(p.bmi, 1)}, eGFR ${fmt(p.egfr, 0)}` +
-      (p.uacr != null ? `, UACR ${fmt(p.uacr, 1)} mg/g` : '') + (p.a1c != null ? `, HbA1c ${fmt(p.a1c, 1)}%` : '') + (p.sdi != null ? `, SDI decile ${p.sdi}` : '')
+      (p.uacr != null ? `, UACR ${fmt(p.uacr, 1)} mg/g` : '') + (p.a1c != null ? `, HbA1c ${fmt(p.a1c, 1)}%` : '') + (p.sdi != null ? `, SDI decile ${p.sdi}` : '') + (p.lpa != null ? `, Lp(a) ${fmt(p.lpa, 0)} ${lpaUnit()}` : '') + (p.apob != null ? `, apoB ${fmt(p.apob, 0)} mg/dL` : '') + (p.ldl != null ? `, LDL-C ${fmt(p.ldl, 0)} mg/dL` : '') + (p.tg != null ? `, TG ${fmt(p.tg, 0)} mg/dL` : '')
   ];
   return lines.join('\n');
 }
@@ -1230,7 +1418,7 @@ for (const k of BOOL) {
     render();
   }));
 }
-[['u-chol', 'chol'], ['u-creat', 'creat'], ['u-a1c', 'a1c'], ['u-uacr', 'uacr'], ['u-ht', 'ht'], ['u-wt', 'wt']].forEach(([id, fam]) =>
+[['u-chol', 'chol'], ['u-creat', 'creat'], ['u-a1c', 'a1c'], ['u-uacr', 'uacr'], ['u-ht', 'ht'], ['u-wt', 'wt'], ['u-lpa', 'lpa'], ['u-apob', 'apob']].forEach(([id, fam]) =>
   $('#' + id).addEventListener('change', e => { S.u[fam] = e.target.value; render(); }));
 $('#bmi-toggle').onclick = () => { S.bmiMode = S.bmiMode === 'direct' ? 'calc' : 'direct'; render(); };
 $('#egfr-toggle').onclick = () => { S.egfrMode = S.egfrMode === 'direct' ? 'calc' : 'direct'; render(); };
@@ -1242,6 +1430,7 @@ $('#mbar-btn').onclick = () => {
 };
 
 function loadExample() {
+  ptDirty = false;
   S = blank();
   Object.assign(S.v, { sex: 'female', age: 50, tc: 200, hdl: 45, statin: false, sbp: 160, bpmed: true, dm: true, smoker: false, bmi: 35, egfr: 90 });
   for (const k in S.v) S.src[k] = 'example';
@@ -1309,7 +1498,7 @@ document.addEventListener('paste', e => {
 const FIELD_MAP = {
   sex: 'sex', age: 'age', total_cholesterol_mg_dl: 'tc', hdl_mg_dl: 'hdl', sbp_mm_hg: 'sbp', bp_meds: 'bpmed', statin: 'statin',
   diabetes: 'dm', current_smoker: 'smoker', bmi: 'bmi', height_cm: 'ht', weight_kg: 'wt', egfr: 'egfr', creatinine_mg_dl: 'creat',
-  uacr_mg_g: 'uacr', hba1c_percent: 'a1c', sdi_decile: 'sdi'
+  uacr_mg_g: 'uacr', hba1c_percent: 'a1c', sdi_decile: 'sdi', lpa_nmol_l: 'lpa', lpa_mg_dl: 'lpa', apob_mg_dl: 'apob', ldl_mg_dl: 'ldl', triglycerides_mg_dl: 'tg'
 };
 const KEY_OF = Object.fromEntries(Object.entries(FIELD_MAP).map(([a, b]) => [b, a]));
 
@@ -1336,6 +1525,10 @@ Allowed keys (include a key only when the material gives evidence for it):
 - creatinine_mg_dl: serum creatinine
 - uacr_mg_g: urine albumin-to-creatinine ratio
 - hba1c_percent
+- lpa_nmol_l or lpa_mg_dl: lipoprotein(a), also written Lp(a), LPA or lpa, in whichever unit the report uses (never convert between them)
+- apob_mg_dl: apolipoprotein B (g/L x 100 = mg/dL)
+- ldl_mg_dl: LDL cholesterol (mmol/L x 38.67)
+- triglycerides_mg_dl: triglycerides (mmol/L x 88.57)
 
 Rules:
 - Convert units: cholesterol mmol/L x 38.67 = mg/dL; creatinine umol/L / 88.42 = mg/dL; HbA1c mmol/mol / 10.929 + 2.15 = %; UACR mg/mmol x 8.84 = mg/g; lb x 0.4536 = kg; inches x 2.54 = cm. Say in "note" when you converted.
@@ -1370,6 +1563,7 @@ function mergeFields(obj, srcKind) {
     if (val == null) continue;
     const conf = ['high', 'medium', 'low'].includes(it.confidence) ? it.confidence : 'medium';
     S.v[k] = val; S.src[k] = srcKind; S.conf[k] = conf;
+    if (k === 'lpa') S.u.lpa = key === 'lpa_mg_dl' ? 'mgdl' : 'nmol';
     if (it.note) S.note[k] = String(it.note).slice(0, 160); else delete S.note[k];
     rows.push({ k, val, conf, source: it.source || '', note: it.note || '' });
   }
@@ -1383,13 +1577,14 @@ function mergeFields(obj, srcKind) {
   if (rows.some(r => r.k === 'uacr')) S.u.uacr = 'mgg';
   if (rows.some(r => r.k === 'ht')) S.u.ht = 'cm';
   if (rows.some(r => r.k === 'wt')) S.u.wt = 'kg';
+  if (rows.some(r => r.k === 'apob')) S.u.apob = 'mgdl';
   return rows;
 }
 
 function showVal(k, v) {
   if (typeof v === 'boolean') return v ? 'Yes' : 'No';
   if (k === 'sex') return v === 'female' ? 'Female' : 'Male';
-  const unit = { tc: ' mg/dL', hdl: ' mg/dL', sbp: ' mm Hg', ht: ' cm', wt: ' kg', creat: ' mg/dL', uacr: ' mg/g', a1c: ' %', age: ' y' }[k] || '';
+  const unit = { tc: ' mg/dL', hdl: ' mg/dL', sbp: ' mm Hg', ht: ' cm', wt: ' kg', creat: ' mg/dL', uacr: ' mg/g', a1c: ' %', age: ' y', lpa: ' ' + lpaUnit(), apob: ' mg/dL', ldl: ' mg/dL', tg: ' mg/dL' }[k] || '';
   return fmt(v, k === 'creat' ? 2 : 1) + unit;
 }
 function showReview(rows, notes, srcKind) {
@@ -1434,6 +1629,23 @@ function localParse(text) {
     const avg = bps.reduce((s, x) => s + +x[1], 0) / bps.length;
     put('sbp_mm_hg', Math.round(avg), bps.map(x => x[0].trim()).join(', '), bps.length > 1 ? 'medium' : 'high', bps.length > 1 ? `Average of ${bps.length} readings` : undefined);
   } else if ((m = text.match(/\b(?:sbp|systolic|blood pressure|bp)(?![ -]?(?:med|pill|drug|lowering))[^\d\n]{0,12}(\d{2,3})/i))) put('sbp_mm_hg', +m[1], m[0]);
+  if ((m = text.match(/\b(?:ldl|low[-\s]density lipoprotein)(?:[-\s]?c\b|[-\s]cholesterol)?(?:\s*\(calc\w*\))?[^\d\n\/]{0,15}(\d{1,3}(?:\.\d+)?)\s*(mmol\/l)?/i)) && !/ratio|hdl/i.test(m[0])) {
+    const n = +m[1], conv = !!m[2] || n < 15;
+    put('ldl_mg_dl', conv ? Math.round(n * 38.67) : n, m[0], conv ? 'medium' : 'high', conv ? 'Converted from mmol/L' : undefined);
+  }
+  if ((m = text.match(/\b(?:triglycerides?|trigs?|tgs?)\b[^\d\n]{0,15}(\d{1,4}(?:\.\d+)?)\s*(mmol\/l)?/i))) {
+    const n = +m[1], conv = !!m[2] || n < 20;
+    put('triglycerides_mg_dl', conv ? Math.round(n * 88.57) : n, m[0], conv ? 'medium' : 'high', conv ? 'Converted from mmol/L' : undefined);
+  }
+  // Lp(a) and apoB, matched across the whole text since they often share a line with other lipids
+  if ((m = text.match(/\b(?:lp\s*\(\s*a\s*\)|lp\s*a(?![a-z])|lipoprotein\s*\(?\s*(?:little\s+)?a\b\s*\)?)[^\d\n]{0,15}(\d{1,4}(?:\.\d+)?)\s*(nmol\/l|mg\/dl)?/i))) {
+    const nmol = /nmol\/l/i.test(m[2] || '');
+    put(nmol ? 'lpa_nmol_l' : 'lpa_mg_dl', +m[1], m[0], m[2] ? 'high' : 'medium', m[2] ? undefined : 'Unit not stated; assumed mg/dL. Check the report.');
+  }
+  if ((m = text.match(/\b(?:apo\s*-?\s*b(?:-100)?|apolipoprotein\s*b(?:-100)?)\b[^\d\n]{0,15}(\d{1,3}(?:\.\d+)?)\s*(g\/l|mg\/dl)?/i))) {
+    const n = +m[1], gl = /g\/l/i.test(m[2] || '') || n < 5;
+    put('apob_mg_dl', gl ? Math.round(n * 100) : n, m[0], gl ? 'medium' : 'high', gl ? 'Converted from g/L' : undefined);
+  }
   // Lipids often share one line ("TC 212, HDL 41, LDL 140"), so match them directly first
   const lipid = (re, key, lim) => {
     const mm = text.match(re); if (!mm) return;
@@ -1532,6 +1744,8 @@ $('#btn-stop').onclick = () => ctl && ctl.abort();
 /* ---------- Say or type a change ---------- */
 const SPOKEN = [
   [/\b(a\s*1\s*c|a one c|hb\s*a1c|hemoglobin a1c|glycated)\b/i, 'a1c'], [/\b(u\s*acr|acr|albumin|micro\s*albumin)\b/i, 'uacr'],
+  [/\blp\s*\(?\s*(?:little\s+)?a(?![a-z])\s*\)?|\blipoprotein\s*\(?\s*(?:little\s+)?a\b/i, 'lpa'], [/\bapo\s*-?\s*b\b|\bapolipoprotein\s*b\b/i, 'apob'],
+  [/\bldl(?:[-\s]?c(?:holesterol)?)?\b/i, 'ldl'], [/\b(?:triglycerides?|trigs?|tgs?)\b/i, 'tg'],
   [/\b(sdi|deprivation)\b/i, 'sdi'], [/\begfr\b|\bgfr\b/i, 'egfr'], [/\bcreatinine\b/i, 'creat'], [/\bbmi\b/i, 'bmi'],
   [/\bheight\b/i, 'ht'], [/\bweight\b/i, 'wt'], [/\bhdl\b/i, 'hdl'], [/\b(total cholesterol|tc|cholesterol)\b/i, 'tc'],
   [/\b(bp|blood pressure)\s*(med\w*|pills?|drugs?)\b/i, 'bpmed'], [/\b(systolic|blood pressure|bp|sbp)\b/i, 'sbp'],
@@ -1561,7 +1775,8 @@ function localUpdate(text) {
 }
 
 function buildUpdatePrompt(text) {
-  const now = Object.keys(LABEL).map(k => `- ${KEY_OF[k]}: ${S.v[k] == null || (typeof S.v[k] === 'number' && !isFinite(S.v[k])) ? '(blank)' : JSON.stringify(S.v[k])}`).join('\n');
+  const keyFor = k => k === 'lpa' ? (S.u.lpa === 'mgdl' ? 'lpa_mg_dl' : 'lpa_nmol_l') : KEY_OF[k];
+  const now = Object.keys(LABEL).map(k => `- ${keyFor(k)}: ${S.v[k] == null || (typeof S.v[k] === 'number' && !isFinite(S.v[k])) ? '(blank)' : JSON.stringify(S.v[k])}`).join('\n');
   return `You update the inputs of the AHA PREVENT cardiovascular risk calculator from a short instruction that a clinician spoke or typed. Spoken text comes from speech recognition, so expect transcription slips: numbers spelled out ("one forty two" = 142), "a one c" = HbA1c, "HDL forty one" = HDL 41, "blood pressure one fifty over ninety" = systolic 150.
 
 Current values (mg/dL for cholesterol and creatinine, mm Hg, cm, kg, % for HbA1c, mg/g for UACR):
@@ -1575,7 +1790,7 @@ ${text.slice(0, 4000)}
 Reply with only a JSON object:
 {"reset": <true only if the instruction says to clear everything, start over, or that this is a new patient>, "fields": {"<key>": {"value": <number|boolean|string>, "source": "<the words from the instruction>", "confidence": "high"|"medium"|"low", "note": "<optional, short>"}}, "clear": ["<key to make blank>"], "notes": ["<short notes>"]}
 
-Keys: sex ("female"/"male"), age, total_cholesterol_mg_dl, hdl_mg_dl, sbp_mm_hg, bp_meds, statin, diabetes, current_smoker (booleans), bmi, height_cm, weight_kg, egfr, creatinine_mg_dl, uacr_mg_g, hba1c_percent, sdi_decile (whole number 1-10).
+Keys: sex ("female"/"male"), age, total_cholesterol_mg_dl, hdl_mg_dl, sbp_mm_hg, bp_meds, statin, diabetes, current_smoker (booleans), bmi, height_cm, weight_kg, egfr, creatinine_mg_dl, uacr_mg_g, hba1c_percent, sdi_decile (whole number 1-10), lpa_nmol_l or lpa_mg_dl (lipoprotein(a), in the unit said; "lpa", "LPA", "lp a" and "L P little a" all mean Lp(a); if no unit is said, use the key that matches the current Lp(a) unit), apob_mg_dl (apolipoprotein B), ldl_mg_dl (LDL cholesterol), triglycerides_mg_dl ("TG", "trigs").
 
 Rules:
 - Include in "fields" only the values the instruction sets or changes. Leave everything else out.
