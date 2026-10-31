@@ -706,7 +706,7 @@ pre.summary { white-space: pre-wrap; font-family: var(--font-data); font-size: 1
 <div class="fab-card" id="fab-card" role="dialog" aria-labelledby="fab-h" hidden>
   <div class="top"><b id="fab-h">Say or type a change</b><button class="x" type="button" id="fab-close" aria-label="Close">×</button></div>
   <div class="fab-need" id="fab-need" aria-live="polite"></div>
-  <textarea id="fab-talk" rows="2" placeholder="Talk now, or type a change and press Enter"></textarea>
+  <textarea id="fab-talk" rows="2" placeholder="Talk for up to 2 minutes, then tap Done. Or type a change and press Enter."></textarea>
   <div class="act"><button class="btn small fab-mic2" type="button" id="fab-mic2" aria-pressed="false" aria-label="Talk: dictate a change"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><path d="M12 17v4"/></svg><span class="mic-lbl">Talk</span></button><button class="btn primary small" type="button" id="fab-apply">Apply</button><span class="cap-status" id="fab-status" role="status"></span></div>
   <div class="talk-out" id="fab-out"></div>
 </div>
@@ -1910,7 +1910,7 @@ function setMic(on) {
     b.setAttribute('aria-pressed', on ? 'true' : 'false');
     b.setAttribute('aria-label', on ? 'Stop listening' : 'Talk: dictate a change');
   });
-  $('#fab-mic2 .mic-lbl').textContent = on ? 'Stop' : 'Talk';
+  $('#fab-mic2 .mic-lbl').textContent = on ? 'Done' : 'Talk';
 }
 // Ask for the microphone up front so the browser shows its Allow prompt; asked once per page load
 let micReady = false, micAsking = false;
@@ -1933,50 +1933,90 @@ async function askMic() {
     return e && e.name === 'NotFoundError' ? 'nomic' : 'blocked';
   }
 }
+// Dictation: up to 2 minutes per press. Pauses do not end it; the browser's recognizer is restarted
+// whenever it stops on its own. Tapping the mic again (or the 2-minute limit) ends it and applies the text.
+const MIC_MS = 120000;
+let micSession = null;
+function stopMic(apply = true) { if (micSession) micSession.finish(apply); }
 async function micStart(el = $('#talk')) {
   if (!SR) { setTalkStatus('Voice input isn’t built into this browser. ' + DICTATE_HELP, true); el.focus(); return; }
-  if (micAsking) return;
+  if (micAsking || micSession) return;
   micAsking = true;
   const ok = await askMic().finally(() => { micAsking = false; });
   if (ok === 'blocked') { setTalkStatus(MIC_BLOCKED + DICTATE_HELP, true); el.focus(); return; }
   if (ok === 'nomic') { setTalkStatus('No microphone was found. ' + DICTATE_HELP, true); el.focus(); return; }
   const base = el.value.trim();
-  let said = '', err = null;
-  rec = new SR();
-  rec.lang = navigator.language || 'en-US';
-  rec.continuous = true; rec.interimResults = true;
-  const quiet = ms => { clearTimeout(recQuiet); recQuiet = setTimeout(() => rec && rec.stop(), ms); };
-  rec.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) said += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
-    }
-    el.value = [base, (said + interim).trim()].filter(Boolean).join(' ');
-    quiet(2500);
-  };
-  rec.onerror = e => { err = e.error; };
-  rec.onend = () => {
-    clearTimeout(recQuiet); rec = null; setMic(false);
+  const deadline = Date.now() + MIC_MS;
+  const FATAL = ['not-allowed', 'service-not-allowed', 'audio-capture', 'network', 'start-failed'];
+  let said = '', interim = '', err = null, done = false, wrapped = false, applyOnEnd = true, quickEnds = 0, startedAt = 0;
+  const show = () => { el.value = [base, (said + interim).trim()].filter(Boolean).join(' '); };
+  const left = () => { const t = Math.max(0, Math.ceil((deadline - Date.now()) / 1000)); return `${Math.floor(t / 60)}:${String(t % 60).padStart(2, '0')}`; };
+  const listening = () => setTalkStatus(`Listening… ${left()} left. Pauses are fine. Tap the mic again when you are done to apply it.`);
+  const tick = setInterval(() => {
+    if (done) return;
+    if (Date.now() >= deadline) { setTalkStatus('2 minutes are up. Applying what you said…'); session.finish(true); }
+    else listening();
+  }, 1000);
+  function wrapUp() {
+    if (wrapped) return; wrapped = true;
+    clearInterval(tick); micSession = null; rec = null; setMic(false);
+    if (interim) { said += interim + ' '; interim = ''; show(); }
     if (err === 'not-allowed' || err === 'service-not-allowed') { micReady = false; setTalkStatus(MIC_BLOCKED + DICTATE_HELP, true); }
     else if (err === 'audio-capture') setTalkStatus('No microphone was found. ' + DICTATE_HELP, true);
     else if (err === 'network') setTalkStatus('Speech recognition needs an internet connection. ' + DICTATE_HELP, true);
+    else if (err === 'start-failed') setTalkStatus('Voice input stopped unexpectedly. Your words so far are in the box; press Apply to use them. ' + DICTATE_HELP, true);
+    else if (!applyOnEnd) setTalkStatus(said.trim() ? 'Stopped. Your words are in the box; press Apply to use them.' : '');
     else if (said.trim()) applyTalk(el);
-    else setTalkStatus(err && err !== 'no-speech' && err !== 'aborted' ? `Voice input stopped (${err}). ` + DICTATE_HELP : 'Didn’t hear anything. Tap the mic and try again.', err && err !== 'no-speech' && err !== 'aborted');
+    else setTalkStatus('Didn’t hear anything. Tap the mic and try again.');
+  }
+  const session = {
+    finish(apply) {
+      if (done) return;
+      done = true; applyOnEnd = apply;
+      if (rec) { try { rec.stop(); } catch { wrapUp(); } } else wrapUp();
+    }
   };
-  try { rec.start(); } catch { rec = null; setTalkStatus('Voice input could not start here. ' + DICTATE_HELP, true); return; }
+  function begin() {
+    const r = new SR();
+    r.lang = navigator.language || 'en-US';
+    r.continuous = true; r.interimResults = true;
+    r.onresult = e => {
+      interim = '';
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        if (e.results[i].isFinal) said += e.results[i][0].transcript + ' ';
+        else interim += e.results[i][0].transcript;
+      }
+      show();
+    };
+    r.onerror = e => { if (e.error !== 'no-speech' && e.error !== 'aborted') err = e.error; };
+    r.onend = () => {
+      if (interim) { said += interim + ' '; interim = ''; show(); }
+      rec = null;
+      // Ended on its own (silence, browser limit): start again until the user stops or time runs out
+      if (!done && !FATAL.includes(err) && Date.now() < deadline) {
+        quickEnds = Date.now() - startedAt < 1000 ? quickEnds + 1 : 0;
+        if (quickEnds < 5) { try { begin(); return; } catch { err = 'start-failed'; } }
+        else err = 'start-failed';
+      }
+      done = true; wrapUp();
+    };
+    startedAt = Date.now();
+    r.start();
+    rec = r;
+  }
+  try { begin(); } catch { clearInterval(tick); rec = null; setTalkStatus('Voice input could not start here. ' + DICTATE_HELP, true); return; }
+  micSession = session;
   setMic(true);
-  setTalkStatus('Listening… say the values or changes. It applies when you pause.');
-  quiet(8000);
+  listening();
 }
-$('#btn-mic').onclick = () => { if (rec) rec.stop(); else micStart($('#talk')); };
+$('#btn-mic').onclick = () => { if (micSession) stopMic(true); else micStart($('#talk')); };
 
 // Floating mic: opens a small card and starts listening; works from anywhere on the page
 function fabOpen(open) {
   $('#fab-card').hidden = !open;
   document.body.classList.toggle('fab-open', open);
   if (open) fitKeyboard();
-  if (!open && rec) rec.stop();
+  if (!open && micSession) stopMic(false); // closing the card cancels; the words stay in the box
 }
 // Keep the bottom sheet above the on-screen keyboard where the browser reports it
 function fitKeyboard() {
@@ -1986,13 +2026,13 @@ function fitKeyboard() {
   document.documentElement.style.setProperty('--vvh', vv.height + 'px');
 }
 if (window.visualViewport) { visualViewport.addEventListener('resize', fitKeyboard); visualViewport.addEventListener('scroll', fitKeyboard); }
-$('#fab-mic2').onclick = () => { if (rec) rec.stop(); else micStart($('#fab-talk')); };
+$('#fab-mic2').onclick = () => { if (micSession) stopMic(true); else micStart($('#fab-talk')); };
 // Tapping a needed item jumps to it; on phones, tuck the sheet away so the field is visible
 document.addEventListener('click', e => {
   if (e.target.closest('#fab-need [data-goto]') && matchMedia('(max-width: 900px)').matches) fabOpen(false);
 });
 $('#fab-mic').onclick = () => {
-  if (rec) { rec.stop(); return; }
+  if (micSession) { stopMic(true); return; }
   fabOpen(true);
   micStart($('#fab-talk'));
 };
