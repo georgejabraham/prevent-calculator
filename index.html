@@ -1211,17 +1211,22 @@ function buildPatientMsg(o) {
   }
   if (p.smoker) T.push('Quitting smoking would also lower your risk.');
   // Recommendation
-  const these = hi.length > 1 ? 'these' : hi.length ? 'it' : '';
+  // A statin lowers LDL and apoB, not Lp(a)
+  const lowerable = hi.filter(x => x !== 'Lp(a)');
+  const these = lowerable.length > 1 ? 'these' : lowerable.length ? `your ${lowerable[0]}` : '';
+  // Elevated Lp(a): "lower targets than usual", so aim one step lower (70) when the usual goal is 100
+  const ldlGoal = goal ? (lpaHi ? Math.min(goal[0], 70) : goal[0]) : (lpaHi ? 70 : 100);
   const tgMed = tgSev ? " I'd also like to add a medicine to lower your triglycerides, such as fenofibrate." : '';
   let ask = false;
   if (!p.statin && (indicated || cat === 'borderline' || strongEnh.length)) {
     T.push(`I recommend starting a statin${these ? ` to bring ${these} down` : ''} and following up in 3 months.`);
+    T.push(`The goal is to get your LDL under ${ldlGoal}.`);
     if (lpaHi) T.push("I'd also like to get a CT coronary calcium score to check for early plaque buildup given your elevated Lp(a).");
     else if (!indicated) T.push('A CT coronary calcium score can also help decide.');
     if (tgMed) T.push(tgMed.trim());
     ask = true;
   } else if (p.statin && goal && (badHigh || (p.apob != null && apobGoal && p.apob >= apobGoal))) {
-    T.push('Your cholesterol is still above goal on your statin, so I recommend increasing the dose and following up in 3 months.' + tgMed);
+    T.push(`Your cholesterol is still above goal on your statin, so I recommend increasing the dose and following up in 3 months. The goal is to get your LDL under ${ldlGoal}.` + tgMed);
     ask = true;
   } else if (tgMed) {
     T.push(tgMed.trim() + ' Cutting out alcohol and sugary foods also helps.');
